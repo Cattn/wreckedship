@@ -7,8 +7,12 @@
     <style>
       :root {
         --lane-gap: 8px;
-        --lane-bg: #0f1115;
-        --lane-border: #2a2f3a;
+        --glass-bg: rgba(12, 22, 38, 0.52);
+        --glass-border: rgba(255, 255, 255, 0.25);
+        --panel-bg: rgba(10, 18, 32, 0.58);
+        --panel-border: rgba(255, 255, 255, 0.18);
+        --lane-bg: var(--panel-bg);
+        --lane-border: var(--panel-border);
       }
       * {
         box-sizing: border-box;
@@ -27,6 +31,13 @@
       }
       #game-root {
         width: min(900px, 96vw);
+        background: var(--glass-bg);
+        backdrop-filter: blur(10px) saturate(120%);
+        -webkit-backdrop-filter: blur(10px) saturate(120%);
+        border: 1px solid var(--glass-border);
+        border-radius: 16px;
+        padding: 12px;
+        box-shadow: 0 10px 30px rgba(0, 0, 0, 0.25);
       }
       #game {
         position: relative;
@@ -38,8 +49,8 @@
       .lane {
         position: relative;
         background: var(--lane-bg);
-        border: 2px solid var(--lane-border);
-        border-radius: 10px;
+        border: 1px solid var(--lane-border);
+        border-radius: 12px;
         overflow: hidden;
         display: flex;
         flex-direction: column;
@@ -102,8 +113,8 @@
         margin-bottom: 12px;
       }
       .controller-card {
-        background: #0f1115;
-        border: 1px solid #2a2f3a;
+        background: var(--panel-bg);
+        border: 1px solid var(--panel-border);
         border-radius: 8px;
         padding: 8px;
         display: flex;
@@ -129,18 +140,19 @@
       .qr {
         width: 120px;
         height: 120px;
-        background: #0b0d12;
+        background: rgba(255, 255, 255, 0.04);
         display: grid;
         place-items: center;
         border-radius: 6px;
+        border: 1px solid var(--panel-border);
       }
       #role {
         font-weight: 600;
         font-size: 14px;
         padding: 6px 10px;
-        border: 1px solid #2a2f3a;
+        border: 1px solid var(--panel-border);
         border-radius: 8px;
-        background: #0f1115;
+        background: var(--panel-bg);
       }
       #hidden-inputs {
         position: fixed;
@@ -182,7 +194,7 @@
       <div id="hud">
         <div id="role">Role: -</div>
       </div>
-      <div id="waiting-message" style="display:none; margin: 8px 0; padding: 8px 10px; border: 1px solid #2a2f3a; border-radius: 8px; background:#0f1115; color:#ffe66d;">waiting on new game</div>
+      <div id="waiting-message" style="display:none; margin: 8px 0; padding: 8px 10px; border: 1px solid var(--panel-border); border-radius: 8px; background: var(--panel-bg); color:#ffe66d;">waiting on new game</div>
       <div id="controllers">
         <div class="controller-card" id="card-shooter-a">
           <h4>SHOOTER A</h4>
