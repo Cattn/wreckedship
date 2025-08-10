@@ -446,7 +446,13 @@ class GameClient {
       }
       this.showShakeToast(payload);
     });
-    this.socket.on("monster-destroyed", () => {});
+    this.socket.on("monster-destroyed", (payload) => {
+      if (!payload || !payload.id) return;
+      this.removeEntityImmediate(payload.id);
+      if (this.entities && Array.isArray(this.entities.monsters)) {
+        this.entities.monsters = this.entities.monsters.filter((m) => m.id !== payload.id);
+      }
+    });
     this.socket.on("round-started", () => {});
     this.socket.on("round-ended", () => {
       this.entities = { monsters: [], obstacles: [] };
@@ -615,6 +621,14 @@ class GameClient {
       if (laneName === this.currentLane) laneEl.classList.add("active");
       else laneEl.classList.remove("active");
     });
+  }
+
+  removeEntityImmediate(entityId) {
+    const el = this.entityElements && this.entityElements.get(entityId);
+    if (el && el.parentElement) {
+      el.parentElement.removeChild(el);
+    }
+    if (this.entityElements) this.entityElements.delete(entityId);
   }
 
   ensureToast() {
