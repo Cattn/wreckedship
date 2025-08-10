@@ -517,8 +517,8 @@ class GameClient {
       el.innerHTML = "";
       new window.QRCode(el, {
         text,
-        width: 120,
-        height: 120,
+        width: 290,
+        height: 290,
         colorDark: "#000000",
         colorLight: "#ffffff",
         correctLevel: window.QRCode.CorrectLevel.H,
