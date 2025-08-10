@@ -491,13 +491,55 @@ export class GameManager {
   private defaultLevelScript(): LevelEvent[] {
     const events: LevelEvent[] = [];
     let t = 500;
-    for (let i = 0; i < 8; i += 1) {
+    for (let i = 0; i < 6; i += 1) {
+      const lane: Lane = pickLane(i);
+      events.push({ atMs: t, type: "MONSTER", lane });
+      t += 800;
+    }
+    for (let i = 0; i < 10; i += 1) {
+      const lane: Lane = pickLane(i + 1);
+      events.push({ atMs: t, type: "MONSTER", lane, forRole: "SHOOTER_A" });
+      t += 600;
+    }
+    for (let i = 0; i < 10; i += 1) {
+      const lane: Lane = pickLane(i + 2);
+      events.push({ atMs: t, type: "MONSTER", lane, forRole: "SHOOTER_B" });
+      t += 600;
+    }
+    for (let i = 0; i < 14; i += 1) {
+      const lane: Lane = pickLane(i);
+      events.push({ atMs: t, type: "OBSTACLE", lane });
+      t += 700;
+    }
+    for (let i = 0; i < 16; i += 1) {
+      const laneM: Lane = pickLane(i + 1);
+      const laneO: Lane = pickLane(i + 2);
+      events.push({ atMs: t, type: "MONSTER", lane: laneM });
+      events.push({ atMs: t + 200, type: "OBSTACLE", lane: laneO });
+      t += 650;
+    }
+    for (let i = 0; i < 10; i += 1) {
       const laneA: Lane = pickLane(i);
       const laneB: Lane = pickLane(i + 1);
-      events.push({ atMs: t, type: "MONSTER", lane: laneA });
-      if (i % 3 === 2)
-        events.push({ atMs: t + 400, type: "OBSTACLE", lane: laneB });
-      t += 1000;
+      events.push({ atMs: t, type: "MONSTER", lane: laneA, forRole: "SHOOTER_A" });
+      events.push({ atMs: t, type: "MONSTER", lane: laneB, forRole: "SHOOTER_B" });
+      t += 700;
+    }
+    for (let i = 0; i < 28; i += 1) {
+      const lane: Lane = pickLane(i + (i % 2));
+      events.push({ atMs: t, type: "MONSTER", lane });
+      t += 300;
+    }
+    for (let i = 0; i < 16; i += 1) {
+      const laneO: Lane = pickLane(i + 1);
+      events.push({ atMs: t, type: "OBSTACLE", lane: laneO });
+      if (i % 3 === 0) {
+        const laneA: Lane = pickLane(i + 2);
+        const laneB: Lane = pickLane(i);
+        events.push({ atMs: t + 150, type: "MONSTER", lane: laneA, forRole: "SHOOTER_A" });
+        events.push({ atMs: t + 150, type: "MONSTER", lane: laneB, forRole: "SHOOTER_B" });
+      }
+      t += 800;
     }
     return events;
   }
