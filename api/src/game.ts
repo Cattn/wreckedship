@@ -263,7 +263,7 @@ export class GameManager {
       (this.state.levelScript.length > 0
         ? Math.max(...this.state.levelScript.map((e) => e.atMs))
         : 0) + 3000;
-    const endTimer = setTimeout(() => this.endRound(), lastAt);
+    const endTimer = setTimeout(() => this.endRound("WIN"), lastAt);
     this.state.timers.add(endTimer);
 
     this.io.emit("round-started", { round: this.state.roundNumber });
@@ -275,7 +275,7 @@ export class GameManager {
     this.endRound();
   }
 
-  private endRound() {
+  private endRound(result?: "WIN" | "FAIL") {
     if (!this.state.roundActive) return;
     this.state.roundActive = false;
     this.clearTimers();
@@ -285,6 +285,7 @@ export class GameManager {
     this.state.tideActiveUntil = 0;
     this.syncEntities();
     this.io.emit("round-ended", { round: this.state.roundNumber });
+    if (result === "WIN" || result === "FAIL") this.io.emit("game-result", { result });
   }
 
   private spawn(type: "MONSTER" | "OBSTACLE", lane: Lane, forRole: PlayerRole | "ALL" = "ALL") {
@@ -421,7 +422,7 @@ export class GameManager {
     const current = typeof this.state.lives === "number" ? this.state.lives : 0;
     this.state.lives = Math.max(0, current - 1);
     this.emitLives();
-    if ((this.state.lives || 0) <= 0) this.endRound();
+    if ((this.state.lives || 0) <= 0) this.endRound("FAIL");
   }
 
   public getGameStats(): GameStats {

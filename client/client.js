@@ -470,6 +470,18 @@ class GameClient {
       if (!payload) return;
       this.applyLives(typeof payload.lives === "number" ? payload.lives : this.lives);
     });
+    this.socket.on("game-result", (payload) => {
+      if (!payload || !payload.result) return;
+      const el = this.ensureToast();
+      if (payload.result === "FAIL") el.textContent = "Game Over";
+      else if (payload.result === "WIN") el.textContent = "You Win!";
+      else el.textContent = "Game Ended";
+      el.style.opacity = "1";
+      clearTimeout(this._toastTimer);
+      this._toastTimer = setTimeout(() => {
+        el.style.opacity = "0";
+      }, 1600);
+    });
   }
 
   bindMovementCallbacks() {
