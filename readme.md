@@ -32,5 +32,11 @@
 
 4P - **1 Captain, 2 Shooters, 1 Enemy**
 
+### Can I play sitting down?
+You likely can! It depends on your camera and lighting conditions, but theres a good chance the setup will work with you sitting down, and leaning side to side!
+
+But where's the fun in that? 😸
+
 ## Notes:
 All camera processing is done locally, absolutely no camera data is sent to the server! 
+
