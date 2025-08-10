@@ -104,6 +104,20 @@ export class GameManager {
     });
   }
 
+  private movementToLane(movement: MovementDirection | undefined): Lane {
+    if (movement === "LEFT") return "LEFT";
+    if (movement === "RIGHT") return "RIGHT";
+    return "CENTER";
+  }
+
+  private resolveLaneForShot(shooterRole: PlayerRole | null): Lane {
+    if (shooterRole === "SHOOTER_A" || shooterRole === "SHOOTER_B") {
+      const shooter = [...this.state.players.values()].find((p) => p.role === shooterRole);
+      if (shooter) return this.movementToLane(shooter.lastMovement as MovementDirection | undefined);
+    }
+    return "CENTER";
+  }
+
   private addPlayer(
     socket: Socket,
     role: PlayerRole | "AUTO" | null | undefined
@@ -169,13 +183,14 @@ export class GameManager {
     }
   }
 
-  private handleShoot(senderSocketId: string, lane: Lane) {
+  private handleShoot(senderSocketId: string, _lane: Lane) {
     let role: PlayerRole | null = null;
     const player = this.state.players.get(senderSocketId);
     if (player) role = player.role;
     else role = this.state.controllerRoleBySocket.get(senderSocketId) || null;
     const accepted = !!this.state.roundActive && (role === "SHOOTER_A" || role === "SHOOTER_B");
     const targetPlayer = [...this.state.players.values()].find((p) => p.role === role);
+    const lane = this.resolveLaneForShot(role);
     const offset = this.getTideOffset();
     const now = Date.now();
     let hit: ActiveEntity | undefined;
@@ -226,10 +241,8 @@ export class GameManager {
 
     for (const evt of this.state.levelScript) {
       const t = setTimeout(() => {
-        const offset = this.getTideOffset();
-        const mappedLane = this.mapLaneWithOffset(evt.lane, offset);
-        if (evt.type === "MONSTER") this.spawn("MONSTER", mappedLane);
-        else this.spawn("OBSTACLE", mappedLane);
+        if (evt.type === "MONSTER") this.spawn("MONSTER", evt.lane);
+        else this.spawn("OBSTACLE", evt.lane);
       }, evt.atMs);
       this.state.timers.add(t);
     }
@@ -271,9 +284,14 @@ export class GameManager {
   }
 
   private syncEntities() {
+    const offset = this.getTideOffset();
+    const mapEntity = (e: ActiveEntity) => ({
+      ...e,
+      lane: this.mapLaneWithOffset(e.lane, offset),
+    });
     this.io.emit("entities", {
-      monsters: [...this.state.monsters.values()],
-      obstacles: [...this.state.obstacles.values()],
+      monsters: [...this.state.monsters.values()].map(mapEntity),
+      obstacles: [...this.state.obstacles.values()].map(mapEntity),
     });
   }
 

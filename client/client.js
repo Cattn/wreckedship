@@ -738,11 +738,15 @@ class GameClient {
     }
 
     for (const entity of visible) {
-      if (!this.entityElements.has(entity.id)) {
+      const laneContainer = this.laneEntityContainers[entity.lane];
+      if (!laneContainer) continue;
+      const existing = this.entityElements.get(entity.id);
+      if (!existing) {
         const el = this.createEntityElement(entity.type);
-        const laneContainer = this.laneEntityContainers[entity.lane];
-        if (laneContainer) laneContainer.appendChild(el);
+        laneContainer.appendChild(el);
         this.entityElements.set(entity.id, el);
+      } else if (existing.parentElement !== laneContainer) {
+        laneContainer.appendChild(existing);
       }
     }
   }
