@@ -16,11 +16,11 @@ class PersonTracker {
     this.baselineX = null;
     this.initialBaselineX = null;
     this.currentX = null;
-    this.movementThreshold = 0.15;
+    this.movementThreshold = 0.09;
     this.stillFramesThreshold = 30;
     this.stillFramesCount = 0;
     this.lastMovement = "STILL";
-    this.baselineDriftLimit = 0.04;
+    this.baselineDriftLimit = 0.03;
 
     this.movementCallbacks = {
       onMoveLeft: () => console.log("Move Left"),
