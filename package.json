@@ -14,7 +14,8 @@
   "type": "commonjs",
   "dependencies": {
     "concurrently": "^9.2.0",
-    "express": "^5.1.0"
+    "express": "^5.1.0",
+    "qrcode": "^1.5.1"
   },
   "devDependencies": {
     "@eslint/js": "^9.33.0",

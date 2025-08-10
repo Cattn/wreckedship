@@ -5,10 +5,16 @@ const app = express();
 const PORT = 4032;
 
 const socketIoClientPath = path.join(__dirname, 'api', 'node_modules', 'socket.io-client', 'dist', 'socket.io.min.js');
+const qrCodeBundlePath = path.join(__dirname, 'node_modules', 'qrcode', 'build', 'qrcode.js');
 
 app.get('/vendor/socket.io.min.js', (req, res) => {
   res.type('application/javascript');
   res.sendFile(socketIoClientPath);
+});
+
+app.get('/vendor/qrcode.js', (req, res) => {
+  res.type('application/javascript');
+  res.sendFile(qrCodeBundlePath);
 });
 
 app.use(express.static(path.join(__dirname, 'client')));
