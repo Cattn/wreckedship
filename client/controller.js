@@ -52,6 +52,13 @@
       document.getElementById("perm").addEventListener("click", () => {
         this.enableMotion();
       });
+      const startBtn = document.getElementById("start-round");
+      const ownerControls = document.getElementById("owner-controls");
+      const isOwner = this.role === "SHOOTER_A";
+      if (ownerControls) ownerControls.style.display = isOwner ? "grid" : "none";
+      if (startBtn && isOwner) {
+        startBtn.addEventListener("click", () => this.emitStartRound());
+      }
     }
 
     connect() {
@@ -119,6 +126,12 @@
       if (!this.socket || !this.socket.connected) return;
       const dir = this.deriveDirection();
       this.socket.emit("tide-shift", dir);
+    }
+
+    emitStartRound() {
+      if (!this.socket || !this.socket.connected) return;
+      if (this.role !== "SHOOTER_A") return;
+      this.socket.emit("start-round");
     }
 
     deriveLane() {

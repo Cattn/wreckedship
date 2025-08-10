@@ -96,6 +96,10 @@ export class GameManager {
         this.activateTide(socket.id, direction);
       });
 
+      socket.on("start-round", () => {
+        this.handleStartRound(socket.id);
+      });
+
       socket.on("disconnect", () => {
         const ctrlRole = this.state.controllerRoleBySocket.get(socket.id);
         if (ctrlRole) {
@@ -402,6 +406,15 @@ export class GameManager {
     this.state.controllersByRole.set(role, socket.id);
     this.state.controllerRoleBySocket.set(socket.id, role);
     this.emitControllersState();
+  }
+
+  private handleStartRound(senderSocketId: string) {
+    let role: PlayerRole | null = null;
+    const p = this.state.players.get(senderSocketId);
+    if (p) role = p.role;
+    else role = this.state.controllerRoleBySocket.get(senderSocketId) || null;
+    if (role !== "SHOOTER_A") return;
+    this.startRound();
   }
 
   private emitControllersState() {
