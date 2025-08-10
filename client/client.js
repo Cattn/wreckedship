@@ -338,6 +338,10 @@ class GameClient {
     };
     this.assets = {
       cursorUrl: (window.SPRITES && window.SPRITES.cursor) || null,
+      cursorLeftUrl: (window.SPRITES && window.SPRITES.cursorLeft) || null,
+      cursorRightUrl: (window.SPRITES && window.SPRITES.cursorRight) || null,
+      shooterCursorUrl: (window.SPRITES && window.SPRITES.shooterCursor) || null,
+      enemyCursorUrl: (window.SPRITES && window.SPRITES.enemyCursor) || null,
       monsterUrl: (window.SPRITES && window.SPRITES.monster) || null,
       obstacleUrl: (window.SPRITES && window.SPRITES.obstacle) || null,
       laneBgUrl: (window.SPRITES && window.SPRITES.laneBg) || null,
@@ -511,19 +515,30 @@ class GameClient {
   }
 
   setupCursorSprites() {
-    if (!this.assets.cursorUrl) return;
+    if (!this.assets.cursorUrl && !this.assets.cursorLeftUrl && !this.assets.cursorRightUrl && !this.assets.shooterCursorUrl && !this.assets.enemyCursorUrl) return;
     Object.values(this.laneElements).forEach((lane) => {
       const el = lane.querySelector(".lane-cursor");
       if (el) {
         el.style.background = "transparent";
         el.style.width = "96px";
         el.style.height = "96px";
-        el.style.backgroundImage = `url(${this.assets.cursorUrl})`;
+        const url = this.resolveCursorUrlForLane(lane.id);
+        if (url) el.style.backgroundImage = `url(${url})`;
         el.style.backgroundSize = "contain";
         el.style.backgroundRepeat = "no-repeat";
         el.style.backgroundPosition = "center";
       }
     });
+  }
+
+  resolveCursorUrlForLane(laneId) {
+    const roleSpecific = this.role === "ENEMY" ? this.assets.enemyCursorUrl
+                      : (this.role === "SHOOTER_A" || this.role === "SHOOTER_B") ? this.assets.shooterCursorUrl
+                      : null;
+    if (roleSpecific) return roleSpecific;
+    if (laneId === "lane-left") return this.assets.cursorLeftUrl || this.assets.cursorUrl;
+    if (laneId === "lane-right") return this.assets.cursorRightUrl || this.assets.cursorUrl;
+    return this.assets.cursorUrl;
   }
 
   setupLaneBackgrounds() {
@@ -644,6 +659,12 @@ class GameClient {
       if (!laneEl) return;
       if (laneName === this.currentLane) laneEl.classList.add("active");
       else laneEl.classList.remove("active");
+
+      const cursorEl = laneEl.querySelector(".lane-cursor");
+      if (cursorEl) {
+        const url = this.resolveCursorUrlForLane(laneEl.id);
+        if (url) cursorEl.style.backgroundImage = `url(${url})`;
+      }
     });
   }
 
