@@ -510,17 +510,17 @@ export class GameManager {
       events.push({ atMs: t, type: "MONSTER", lane, forRole: "SHOOTER_B" });
       t += 600;
     }
-    for (let i = 0; i < 14; i += 1) {
+    for (let i = 0; i < 10; i += 1) {
       const lane: Lane = pickLane(i);
       events.push({ atMs: t, type: "OBSTACLE", lane });
-      t += 700;
+      t += 1000;
     }
-    for (let i = 0; i < 16; i += 1) {
+    for (let i = 0; i < 10; i += 1) {
       const laneM: Lane = pickLane(i + 1);
       const laneO: Lane = pickLane(i + 2);
       events.push({ atMs: t, type: "MONSTER", lane: laneM });
       events.push({ atMs: t + 200, type: "OBSTACLE", lane: laneO });
-      t += 650;
+      t += 900;
     }
     for (let i = 0; i < 10; i += 1) {
       const laneA: Lane = pickLane(i);
@@ -534,7 +534,7 @@ export class GameManager {
       events.push({ atMs: t, type: "MONSTER", lane });
       t += 300;
     }
-    for (let i = 0; i < 16; i += 1) {
+    for (let i = 0; i < 10; i += 1) {
       const laneO: Lane = pickLane(i + 1);
       events.push({ atMs: t, type: "OBSTACLE", lane: laneO });
       if (i % 3 === 0) {
@@ -543,7 +543,7 @@ export class GameManager {
         events.push({ atMs: t + 150, type: "MONSTER", lane: laneA, forRole: "SHOOTER_A" });
         events.push({ atMs: t + 150, type: "MONSTER", lane: laneB, forRole: "SHOOTER_B" });
       }
-      t += 800;
+      t += 1100;
     }
     return events;
   }

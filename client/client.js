@@ -348,7 +348,7 @@ class GameClient {
     };
     this.entities = { monsters: [], obstacles: [] };
     this.entityElements = new Map();
-    this.travelMs = 2200;
+    this.travelMs = 1800;
     this.rafId = null;
     this.toastEl = null;
     this.cooldownEl = null;
@@ -908,24 +908,24 @@ class GameClient {
             if (!container) continue;
             const ch = container.clientHeight || container.getBoundingClientRect().height;
             const eh = el.offsetHeight || 18;
-            const beyond = Math.max(0, (raw - 1) * 240);
+            const beyond = Math.max(0, (raw - 1) * 320);
             const y = t * Math.max(0, ch - eh) + beyond;
             el.style.top = `${y}px`;
 
-            if (this.role === "CAPTAIN" && data.type === "OBSTACLE" && raw >= 1.02) {
+            if (this.role === "CAPTAIN" && data.type === "OBSTACLE" && y >= (ch + eh * 0.5)) {
               if (!this._pendingObstacleRemoval.has(id)) {
                 const h = setTimeout(() => {
                   this.clearedObstacles.add(id);
                   this.removeEntityImmediate(id);
                   this._pendingObstacleRemoval.delete(id);
-                }, 320);
+                }, 200);
                 this._pendingObstacleRemoval.set(id, h);
               }
             }
-            if ((this.role === "SHOOTER_A" || this.role === "SHOOTER_B") && data.type === "MONSTER" && raw >= 1.02) {
+            if ((this.role === "SHOOTER_A" || this.role === "SHOOTER_B") && data.type === "MONSTER" && y >= (ch + eh * 0.5)) {
               if (!this.clearedMonsters.has(id)) {
                 this.clearedMonsters.add(id);
-                setTimeout(() => this.removeEntityImmediate(id), 280);
+                setTimeout(() => this.removeEntityImmediate(id), 180);
               }
             }
     }
