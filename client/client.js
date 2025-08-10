@@ -436,6 +436,14 @@ class GameClient {
       this.applyControllersReadiness(readiness || {});
     });
     this.socket.on("controller-shake", (payload) => {
+      if (!payload || !payload.fromRole) return;
+      if (payload.type === "SHOOT") {
+        if (this.role !== "SHOOTER_A" && this.role !== "SHOOTER_B") return;
+      } else if (payload.type === "TIDE") {
+        if (this.role !== "ENEMY") return;
+      } else {
+        return;
+      }
       this.showShakeToast(payload);
     });
     this.socket.on("monster-destroyed", () => {});

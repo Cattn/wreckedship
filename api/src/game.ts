@@ -175,12 +175,15 @@ export class GameManager {
     if (player) role = player.role;
     else role = this.state.controllerRoleBySocket.get(senderSocketId) || null;
     const accepted = !!this.state.roundActive && (role === "SHOOTER_A" || role === "SHOOTER_B");
-    this.io.emit("controller-shake", {
-      type: "SHOOT",
-      fromRole: role,
-      lane,
-      accepted,
-    });
+    const targetPlayer = [...this.state.players.values()].find((p) => p.role === role);
+    if (targetPlayer) {
+      this.io.to(targetPlayer.id).emit("controller-shake", {
+        type: "SHOOT",
+        fromRole: role,
+        lane,
+        accepted,
+      });
+    }
     if (!accepted) return;
 
     const offset = this.getTideOffset();
@@ -189,9 +192,7 @@ export class GameManager {
     );
     if (hit) {
       this.state.monsters.delete(hit.id);
-      const shooterPlayer = [...this.state.players.values()].find(
-        (p) => p.role === role
-      );
+      const shooterPlayer = [...this.state.players.values()].find((p) => p.role === role);
       if (shooterPlayer) shooterPlayer.kills = (shooterPlayer.kills || 0) + 1;
       this.io.emit("monster-destroyed", { id: hit.id, lane: hit.lane });
       this.syncEntities();
@@ -285,12 +286,15 @@ export class GameManager {
     else role = this.state.controllerRoleBySocket.get(senderSocketId) || null;
     const now = Date.now();
     const canApply = this.state.roundActive && role === "ENEMY" && now >= this.state.tideCooldownUntil;
-    this.io.emit("controller-shake", {
-      type: "TIDE",
-      fromRole: role,
-      direction,
-      accepted: canApply,
-    });
+    const targetPlayer = [...this.state.players.values()].find((p) => p.role === role);
+    if (targetPlayer) {
+      this.io.to(targetPlayer.id).emit("controller-shake", {
+        type: "TIDE",
+        fromRole: role,
+        direction,
+        accepted: canApply,
+      });
+    }
     if (!canApply) return;
     const offset = direction === "LEFT" ? -1 : 1;
     this.state.tideOffset = offset;

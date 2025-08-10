@@ -28,7 +28,7 @@
       this.socket = null;
       this.lastHoriz = 0;
       this.lastShakeAt = 0;
-      this.shakeCooldownMs = 900;
+      this.shakeCooldownMs = 0;
       this.motionEnabled = false;
       this.accThreshold = 18;
       this.feedbackTimer = null;
@@ -95,7 +95,7 @@
 
     onShake() {
       const now = Date.now();
-      if (now - this.lastShakeAt < this.shakeCooldownMs) return;
+      if (this.role === "ENEMY" && now - this.lastShakeAt < 900) return;
       this.lastShakeAt = now;
       this.showFeedback("Shake: good!");
       if (!this.socket || !this.socket.connected) return;
