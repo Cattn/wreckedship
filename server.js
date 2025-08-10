@@ -2,7 +2,7 @@ const express = require('express');
 const path = require('path');
 
 const app = express();
-const PORT = 4031;
+const PORT = 4032;
 
 app.use(express.static(path.join(__dirname, 'client')));
 

@@ -1,11 +1,18 @@
-import type { Server, Socket } from 'socket.io';
-import type { GameStats, Lane, LevelEvent, MovementDirection, PlayerInfo, PlayerRole } from './types';
+import type { Server, Socket } from "socket.io";
+import type {
+  GameStats,
+  Lane,
+  LevelEvent,
+  MovementDirection,
+  PlayerInfo,
+  PlayerRole,
+} from "./types";
 
 interface ActiveEntity {
   id: string;
   lane: Lane;
   spawnedAt: number;
-  type: 'MONSTER' | 'OBSTACLE';
+  type: "MONSTER" | "OBSTACLE";
 }
 
 interface InternalState {
@@ -24,7 +31,7 @@ interface InternalState {
   tideCooldownMs: number;
 }
 
-const LANES: Lane[] = ['LEFT', 'CENTER', 'RIGHT'];
+const LANES: Lane[] = ["LEFT", "CENTER", "RIGHT"];
 const pickLane = (index: number): Lane => {
   const i = ((index % LANES.length) + LANES.length) % LANES.length;
   return LANES[i] as Lane;
@@ -49,81 +56,82 @@ export class GameManager {
       tideActiveUntil: 0,
       tideCooldownUntil: 0,
       tideDurationMs: 2000,
-      tideCooldownMs: 5000
+      tideCooldownMs: 5000,
     };
     this.setupSocketHandlers();
   }
 
   private setupSocketHandlers() {
-    this.io.on('connection', (socket: Socket) => {
+    this.io.on("connection", (socket: Socket) => {
       console.log(`player connected ${socket.id}`);
 
-      socket.on('join', (role: PlayerRole) => {
+      socket.emit("players-updated", this.serializePlayers());
+
+      socket.on("join", (role: PlayerRole) => {
         this.addPlayer(socket, role);
       });
 
-      socket.on('movement', (movement: MovementDirection) => {
+      socket.on("movement", (movement: MovementDirection) => {
         this.updateMovement(socket.id, movement);
       });
 
-      socket.on('shoot', (lane: Lane) => {
+      socket.on("shoot", (lane: Lane) => {
         this.handleShoot(socket.id, lane);
       });
 
-      socket.on('tide-shift', (direction: 'LEFT' | 'RIGHT') => {
+      socket.on("tide-shift", (direction: "LEFT" | "RIGHT") => {
         this.activateTide(socket.id, direction);
       });
 
-      socket.on('disconnect', () => {
+      socket.on("disconnect", () => {
         this.removePlayer(socket.id);
       });
     });
   }
 
   private addPlayer(socket: Socket, role: PlayerRole) {
-    if (!role) role = 'CAPTAIN';
+    if (!role) role = "CAPTAIN";
     const player: PlayerInfo = {
       id: socket.id,
       role,
-      state: 'CONNECTED',
-      kills: 0
+      state: "CONNECTED",
+      kills: 0,
     };
     this.state.players.set(socket.id, player);
-    socket.emit('joined', { id: socket.id, role });
-    this.io.emit('players-updated', this.serializePlayers());
+    socket.emit("joined", { id: socket.id, role });
+    this.io.emit("players-updated", this.serializePlayers());
   }
 
   private removePlayer(socketId: string) {
     this.state.players.delete(socketId);
-    this.io.emit('players-updated', this.serializePlayers());
+    this.io.emit("players-updated", this.serializePlayers());
   }
 
   private updateMovement(playerId: string, movement: MovementDirection) {
     const player = this.state.players.get(playerId);
     if (!player) return;
     player.lastMovement = movement;
-    if (player.role === 'CAPTAIN' && this.state.roundActive) {
-      this.io.emit('ship-moved', { direction: movement });
-    }
-    if (player.role === 'NAVIGATOR' && this.state.roundActive) {
-      this.io.emit('navigator-scan', { direction: movement });
+    if (player.role === "CAPTAIN" && this.state.roundActive) {
+      this.io.emit("ship-moved", { direction: movement });
     }
   }
 
   private handleShoot(playerId: string, lane: Lane) {
     const player = this.state.players.get(playerId);
     if (!player || !this.state.roundActive) return;
-    if (player.role !== 'SHOOTER_A' && player.role !== 'SHOOTER_B') return;
+    if (player.role !== "SHOOTER_A" && player.role !== "SHOOTER_B") return;
 
     const offset = this.getTideOffset();
-    const hit = [...this.state.monsters.values()].find(m => this.mapLaneWithOffset(m.lane, offset) === lane);
+    const hit = [...this.state.monsters.values()].find(
+      (m) => this.mapLaneWithOffset(m.lane, offset) === lane
+    );
     if (hit) {
       this.state.monsters.delete(hit.id);
       player.kills = (player.kills || 0) + 1;
-      this.io.emit('monster-destroyed', { id: hit.id, lane: hit.lane });
+      this.io.emit("monster-destroyed", { id: hit.id, lane: hit.lane });
       this.syncEntities();
     } else {
-      this.io.to(playerId).emit('shot-missed', { lane });
+      this.io.to(playerId).emit("shot-missed", { lane });
     }
   }
 
@@ -134,28 +142,30 @@ export class GameManager {
     this.state.monsters.clear();
     this.state.obstacles.clear();
     this.clearTimers();
-    this.state.levelScript = (levelScript && levelScript.length > 0)
-      ? [...levelScript]
-      : this.defaultLevelScript();
+    this.state.levelScript =
+      levelScript && levelScript.length > 0
+        ? [...levelScript]
+        : this.defaultLevelScript();
     this.state.roundStartTs = Date.now();
 
     for (const evt of this.state.levelScript) {
       const t = setTimeout(() => {
         const offset = this.getTideOffset();
         const mappedLane = this.mapLaneWithOffset(evt.lane, offset);
-        if (evt.type === 'MONSTER') this.spawn('MONSTER', mappedLane);
-        else this.spawn('OBSTACLE', mappedLane);
+        if (evt.type === "MONSTER") this.spawn("MONSTER", mappedLane);
+        else this.spawn("OBSTACLE", mappedLane);
       }, evt.atMs);
       this.state.timers.add(t);
     }
 
-    const lastAt = (this.state.levelScript.length > 0
-      ? Math.max(...this.state.levelScript.map(e => e.atMs))
-      : 0) + 3000;
+    const lastAt =
+      (this.state.levelScript.length > 0
+        ? Math.max(...this.state.levelScript.map((e) => e.atMs))
+        : 0) + 3000;
     const endTimer = setTimeout(() => this.endRound(), lastAt);
     this.state.timers.add(endTimer);
 
-    this.io.emit('round-started', { round: this.state.roundNumber });
+    this.io.emit("round-started", { round: this.state.roundNumber });
     return true;
   }
 
@@ -172,22 +182,22 @@ export class GameManager {
     this.state.tideOffset = 0;
     this.state.tideActiveUntil = 0;
     this.syncEntities();
-    this.io.emit('round-ended', { round: this.state.roundNumber });
+    this.io.emit("round-ended", { round: this.state.roundNumber });
   }
 
-  private spawn(type: 'MONSTER' | 'OBSTACLE', lane: Lane) {
+  private spawn(type: "MONSTER" | "OBSTACLE", lane: Lane) {
     if (!this.state.roundActive) return;
     const id = `${type}-${Date.now()}-${Math.floor(Math.random() * 9999)}`;
     const entity: ActiveEntity = { id, lane, spawnedAt: Date.now(), type };
-    if (type === 'MONSTER') this.state.monsters.set(id, entity);
+    if (type === "MONSTER") this.state.monsters.set(id, entity);
     else this.state.obstacles.set(id, entity);
     this.syncEntities();
   }
 
   private syncEntities() {
-    this.io.emit('entities', {
+    this.io.emit("entities", {
       monsters: [...this.state.monsters.values()],
-      obstacles: [...this.state.obstacles.values()]
+      obstacles: [...this.state.obstacles.values()],
     });
   }
 
@@ -203,22 +213,25 @@ export class GameManager {
     return pickLane(idx + offset);
   }
 
-  private activateTide(playerId: string, direction: 'LEFT' | 'RIGHT') {
+  private activateTide(playerId: string, direction: "LEFT" | "RIGHT") {
     const p = this.state.players.get(playerId);
     if (!p || !this.state.roundActive) return;
-    if (p.role !== 'ENEMY') return;
+    if (p.role !== "ENEMY") return;
     const now = Date.now();
     if (now < this.state.tideCooldownUntil) return;
-    const offset = direction === 'LEFT' ? -1 : 1;
+    const offset = direction === "LEFT" ? -1 : 1;
     this.state.tideOffset = offset;
     this.state.tideActiveUntil = now + this.state.tideDurationMs;
     this.state.tideCooldownUntil = now + this.state.tideCooldownMs;
-    this.io.emit('tide-state', { offset, activeUntil: this.state.tideActiveUntil });
+    this.io.emit("tide-state", {
+      offset,
+      activeUntil: this.state.tideActiveUntil,
+    });
     const t = setTimeout(() => {
       if (this.state.tideActiveUntil <= Date.now()) {
         this.state.tideOffset = 0;
         this.state.tideActiveUntil = 0;
-        this.io.emit('tide-state', { offset: 0, activeUntil: 0 });
+        this.io.emit("tide-state", { offset: 0, activeUntil: 0 });
       }
     }, this.state.tideDurationMs + 10);
     this.state.timers.add(t);
@@ -226,7 +239,9 @@ export class GameManager {
 
   public getGameStats(): GameStats {
     const totalPlayers = this.state.players.size;
-    const activePlayers = [...this.state.players.values()].filter(p => p.state !== 'ELIMINATED').length;
+    const activePlayers = [...this.state.players.values()].filter(
+      (p) => p.state !== "ELIMINATED"
+    ).length;
     const eliminatedPlayers = totalPlayers - activePlayers;
     return {
       totalPlayers,
@@ -235,7 +250,7 @@ export class GameManager {
       roundNumber: this.state.roundNumber,
       roundActive: this.state.roundActive,
       currentMonsters: this.state.monsters.size,
-      currentObstacles: this.state.obstacles.size
+      currentObstacles: this.state.obstacles.size,
     };
   }
 
@@ -245,12 +260,12 @@ export class GameManager {
   }
 
   private serializePlayers() {
-    return [...this.state.players.values()].map(p => ({
+    return [...this.state.players.values()].map((p) => ({
       id: p.id,
       role: p.role,
       state: p.state,
       kills: p.kills || 0,
-      lastMovement: p.lastMovement || 'STILL'
+      lastMovement: p.lastMovement || "STILL",
     }));
   }
 
@@ -260,12 +275,11 @@ export class GameManager {
     for (let i = 0; i < 8; i += 1) {
       const laneA: Lane = pickLane(i);
       const laneB: Lane = pickLane(i + 1);
-      events.push({ atMs: t, type: 'MONSTER', lane: laneA });
-      if (i % 3 === 2) events.push({ atMs: t + 400, type: 'OBSTACLE', lane: laneB });
+      events.push({ atMs: t, type: "MONSTER", lane: laneA });
+      if (i % 3 === 2)
+        events.push({ atMs: t + 400, type: "OBSTACLE", lane: laneB });
       t += 1000;
     }
     return events;
   }
 }
-
-

@@ -1,0 +1,169 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>admin panel</title>
+    <style>
+      body {
+        font-family: Arial, sans-serif;
+        margin: 20px;
+        color: #111;
+      }
+      .hidden {
+        display: none;
+      }
+      input,
+      button,
+      textarea {
+        padding: 8px;
+        margin: 5px 0;
+        font-size: 14px;
+      }
+      button {
+        cursor: pointer;
+      }
+      .row {
+        display: flex;
+        gap: 12px;
+        align-items: center;
+        flex-wrap: wrap;
+      }
+      .error-message,
+      .success-message {
+        padding: 10px;
+        margin: 10px 0;
+        border-radius: 3px;
+        display: none;
+      }
+      .error-message {
+        background: #ffebee;
+        border: 1px solid #f44336;
+        color: #c62828;
+      }
+      .success-message {
+        background: #e8f5e8;
+        border: 1px solid #4caf50;
+        color: #2e7d32;
+      }
+      table {
+        border-collapse: collapse;
+        width: 100%;
+        margin: 20px 0;
+      }
+      th,
+      td {
+        border: 1px solid #ddd;
+        padding: 8px;
+        text-align: left;
+      }
+      th {
+        background-color: #f2f2f2;
+      }
+      .danger {
+        background: #d32f2f;
+        color: #fff;
+        border: none;
+      }
+      .controls {
+        display: flex;
+        gap: 8px;
+        flex-wrap: wrap;
+      }
+      .panel {
+        max-width: 860px;
+      }
+      textarea {
+        width: 100%;
+        min-height: 120px;
+        resize: vertical;
+        font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas,
+          "Liberation Mono", "Courier New", monospace;
+      }
+      .muted {
+        color: #666;
+        font-size: 12px;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="panel">
+      <h1>Admin Panel</h1>
+
+      <div id="login-section">
+        <div class="row">
+          <label for="admin-password">Password:</label>
+          <input
+            type="password"
+            id="admin-password"
+            placeholder="Enter password"
+          />
+          <button id="login-btn">Login</button>
+        </div>
+        <div id="login-error" class="error-message"></div>
+      </div>
+
+      <div id="admin-panel" class="hidden">
+        <h2>Game Statistics</h2>
+        <table>
+          <tr>
+            <th>Stat</th>
+            <th>Value</th>
+          </tr>
+          <tr>
+            <td>Total Players</td>
+            <td id="total-players">0</td>
+          </tr>
+          <tr>
+            <td>Active Players</td>
+            <td id="active-players">0</td>
+          </tr>
+          <tr>
+            <td>Eliminated Players</td>
+            <td id="eliminated-players">0</td>
+          </tr>
+          <tr>
+            <td>Current Round</td>
+            <td id="round-number">0</td>
+          </tr>
+          <tr>
+            <td>Round Status</td>
+            <td id="round-status-text">Inactive</td>
+          </tr>
+          <tr>
+            <td>Current Monsters</td>
+            <td id="current-monsters">0</td>
+          </tr>
+          <tr>
+            <td>Current Obstacles</td>
+            <td id="current-obstacles">0</td>
+          </tr>
+        </table>
+
+        <h2>Controls</h2>
+        <div class="controls">
+          <button id="start-game-btn">Start Round</button>
+          <button id="end-game-btn" class="danger">End Game</button>
+          <button id="refresh-stats-btn">Refresh Stats</button>
+          <button id="auto-refresh-btn">Enable Auto-Refresh</button>
+          <button id="logout-btn">Logout</button>
+        </div>
+
+        <h3>Optional Level Script</h3>
+        <p class="muted">
+          JSON array of events: [{ "atMs": 500, "type": "MONSTER"|"OBSTACLE",
+          "lane": "LEFT"|"CENTER"|"RIGHT" }]
+        </p>
+        <textarea
+          id="level-script"
+          placeholder='[{"atMs":500,"type":"MONSTER","lane":"LEFT"}]'
+        ></textarea>
+
+        <div id="admin-message" class="success-message"></div>
+        <div id="admin-error" class="error-message"></div>
+      </div>
+    </div>
+
+    <script src="admin.js"></script>
+  </body>
+</html>

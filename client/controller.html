@@ -1,0 +1,121 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>control</title>
+    <style>
+      body {
+        margin: 0;
+        background: #0b0d12;
+        color: #fff;
+        font-family: Inter, ui-sans-serif, system-ui, -apple-system, Segoe UI,
+          Roboto, Helvetica, Arial;
+        display: grid;
+        place-items: center;
+        min-height: 100vh;
+      }
+      .card {
+        width: min(520px, 92vw);
+        background: #0f1115;
+        border: 1px solid #2a2f3a;
+        border-radius: 12px;
+        padding: 16px;
+        display: grid;
+        gap: 12px;
+      }
+      .row {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+      }
+      .role {
+        font-weight: 600;
+        font-size: 14px;
+        padding: 6px 10px;
+        border: 1px solid #2a2f3a;
+        border-radius: 8px;
+        background: #0b0d12;
+      }
+      .status {
+        font-size: 12px;
+        opacity: 0.9;
+      }
+      .grid {
+        display: grid;
+        gap: 8px;
+      }
+      .btn {
+        appearance: none;
+        border: 1px solid #2a2f3a;
+        background: #141824;
+        color: #fff;
+        border-radius: 10px;
+        padding: 12px 14px;
+        font-size: 16px;
+        width: 100%;
+      }
+      .btn.primary {
+        background: #1f2937;
+      }
+      .btn:active {
+        transform: scale(0.99);
+      }
+      .segment {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 8px;
+      }
+      .seg-btn {
+        padding: 10px 12px;
+        border-radius: 10px;
+        border: 1px solid #2a2f3a;
+        background: #141824;
+        color: #fff;
+        font-size: 14px;
+      }
+      .seg-btn.active {
+        background: #23304a;
+        border-color: #334155;
+      }
+      .hint {
+        font-size: 12px;
+        opacity: 0.8;
+      }
+      .lane {
+        font-weight: 600;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="card">
+      <div class="row">
+        <div id="role" class="role">Role: -</div>
+        <div id="status" class="status">Disconnected</div>
+      </div>
+      <div class="grid">
+        <div id="lane-box">
+          Lane: <span id="lane" class="lane">CENTER</span>
+        </div>
+        <button id="perm" class="btn">Enable Motion Access</button>
+        <button id="test" class="btn">Test Shake</button>
+      </div>
+      <div id="enemy-controls" class="grid" style="display: none">
+        <div class="segment">
+          <button id="dir-left" class="seg-btn">Shift LEFT</button>
+          <button id="dir-right" class="seg-btn active">Shift RIGHT</button>
+        </div>
+        <button id="confirm-tide" class="btn primary">
+          Confirm Tide (Shake)
+        </button>
+      </div>
+      <div id="shooter-controls" class="grid" style="display: none">
+        <button id="shoot" class="btn primary">Shoot (Shake)</button>
+      </div>
+      <div class="hint">Shake the phone to perform your action.</div>
+    </div>
+
+    <script src="https://cdn.socket.io/4.7.5/socket.io.min.js"></script>
+    <script src="controller.js"></script>
+  </body>
+</html>
