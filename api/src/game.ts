@@ -260,10 +260,18 @@ export class GameManager {
     if (!this.state.lossProcessedIds) this.state.lossProcessedIds = new Set();
     this.state.lossProcessedIds.clear();
 
+    const rolesPresent = new Set<PlayerRole>([
+      ...[...this.state.players.values()].map((p) => p.role),
+      ...[...this.state.controllersByRole.keys()],
+    ]);
     for (const evt of this.state.levelScript) {
       const t = setTimeout(() => {
         const target: PlayerRole | "ALL" = (evt.forRole === "SHOOTER_A" || evt.forRole === "SHOOTER_B") ? (evt.forRole as PlayerRole) : "ALL";
-        if (evt.type === "MONSTER") this.spawn("MONSTER", evt.lane, target);
+        if (evt.type === "MONSTER") {
+          if (target === "SHOOTER_A" && !rolesPresent.has("SHOOTER_A")) return;
+          if (target === "SHOOTER_B" && !rolesPresent.has("SHOOTER_B")) return;
+          this.spawn("MONSTER", evt.lane, target);
+        }
         else this.spawn("OBSTACLE", evt.lane, target);
       }, evt.atMs);
       this.state.timers.add(t);
@@ -422,7 +430,7 @@ export class GameManager {
     const p = this.state.players.get(senderSocketId);
     if (p) role = p.role;
     else role = this.state.controllerRoleBySocket.get(senderSocketId) || null;
-    if (role !== "SHOOTER_A") return;
+    if (role !== "SHOOTER_A" && role !== "SHOOTER_B") return;
     this.startRound();
   }
 

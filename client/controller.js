@@ -56,7 +56,7 @@
       });
       const startBtn = document.getElementById("start-round");
       const ownerControls = document.getElementById("owner-controls");
-      const isOwner = this.role === "SHOOTER_A";
+      const isOwner = this.role === "SHOOTER_A" || this.role === "SHOOTER_B";
       if (ownerControls) ownerControls.style.display = isOwner ? "grid" : "none";
       if (startBtn && isOwner) {
         startBtn.addEventListener("click", () => this.emitStartRound());
@@ -141,24 +141,38 @@
 
     emitStartRound() {
       if (!this.socket || !this.socket.connected) return;
-      if (this.role !== "SHOOTER_A") return;
+      if (this.role !== "SHOOTER_A" && this.role !== "SHOOTER_B") return;
       this.socket.emit("start-round");
     }
 
     updateOwnerStartButton() {
       const startBtn = document.getElementById("start-round");
       const ownerControls = document.getElementById("owner-controls");
-      const isOwner = this.role === "SHOOTER_A";
+      const isOwner = this.role === "SHOOTER_A" || this.role === "SHOOTER_B";
       if (!startBtn || !ownerControls) return;
       ownerControls.style.display = isOwner ? "grid" : "none";
       if (!isOwner) return;
       const roles = new Set((this.players || []).map((p) => p && p.role));
-      const playersReady = roles.has("CAPTAIN") && roles.has("SHOOTER_A") && roles.has("SHOOTER_B") && roles.has("ENEMY");
       const cr = this.controllersReady || {};
-      const controllersReady = !!cr.SHOOTER_A && !!cr.SHOOTER_B && !!cr.ENEMY;
-      const allReady = playersReady && controllersReady;
-      startBtn.disabled = !allReady;
-      startBtn.textContent = allReady ? "Start Round (Everyone Ready)" : "Start Round";
+      const hasCaptain = roles.has("CAPTAIN");
+      const hasA = roles.has("SHOOTER_A");
+      const hasB = roles.has("SHOOTER_B");
+      const aReady = !!cr.SHOOTER_A;
+      const bReady = !!cr.SHOOTER_B;
+      const enemyReady = roles.has("ENEMY") && !!cr.ENEMY;
+      let readyCount = 0;
+      if (hasCaptain) readyCount += 1;
+      if (hasA && aReady) readyCount += 1;
+      if (hasB && bReady) readyCount += 1;
+      if (enemyReady) readyCount += 1;
+      const minReady = hasCaptain && ((hasA && aReady) || (hasB && bReady));
+      startBtn.disabled = !minReady;
+      if (minReady) {
+        const label = readyCount >= 4 ? "4P Ready" : readyCount === 3 ? "3P Ready" : "2P Ready";
+        startBtn.textContent = `Start Round (${label})`;
+      } else {
+        startBtn.textContent = "Start Round";
+      }
     }
 
     deriveLane() {

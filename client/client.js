@@ -550,7 +550,7 @@ class GameClient {
     this.socket.on("game-result", (payload) => {
       if (!payload || !payload.result) return;
       const el = this.ensureToast();
-      if (payload.result === "FAIL") el.textContent = "Game Over - You lost...";
+      if (payload.result === "FAIL") el.textContent = "Uh oh! you SHIPWRECKED! Try again...";
       else if (payload.result === "WIN") el.textContent = "You Win!";
       else el.textContent = "Game Ended";
       el.style.opacity = "1";
