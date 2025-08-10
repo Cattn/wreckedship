@@ -447,10 +447,12 @@ class GameClient {
       this.showShakeToast(payload);
     });
     this.socket.on("monster-destroyed", (payload) => {
+      console.log("monster-destroyed received", payload);
       if (!payload || !payload.id) return;
       this.removeEntityImmediate(payload.id);
       if (this.entities && Array.isArray(this.entities.monsters)) {
         this.entities.monsters = this.entities.monsters.filter((m) => m.id !== payload.id);
+        console.log("monsters remaining", this.entities.monsters.length);
       }
     });
     this.socket.on("round-started", () => {});
@@ -627,6 +629,9 @@ class GameClient {
     const el = this.entityElements && this.entityElements.get(entityId);
     if (el && el.parentElement) {
       el.parentElement.removeChild(el);
+      console.log("removed entity element", entityId);
+    } else {
+      console.log("entity element not found or no parent", entityId);
     }
     if (this.entityElements) this.entityElements.delete(entityId);
   }
