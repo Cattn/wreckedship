@@ -516,8 +516,8 @@ class GameClient {
       const el = lane.querySelector(".lane-cursor");
       if (el) {
         el.style.background = "transparent";
-        el.style.width = "14px";
-        el.style.height = "14px";
+        el.style.width = "96px";
+        el.style.height = "96px";
         el.style.backgroundImage = `url(${this.assets.cursorUrl})`;
         el.style.backgroundSize = "contain";
         el.style.backgroundRepeat = "no-repeat";
