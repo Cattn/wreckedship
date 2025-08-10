@@ -512,21 +512,16 @@ class GameClient {
       u.searchParams.set("socket", socketUrl);
       return u.toString();
     };
-    const draw = (el, text) => {
-      if (!el || !window.QRCode) return;
+    const draw = (id, url) => {
+      if (!window.QRCode) return;
+      const el = document.getElementById(id);
+      if (!el) return;
       el.innerHTML = "";
-      new window.QRCode(el, {
-        text,
-        width: 290,
-        height: 290,
-        colorDark: "#000000",
-        colorLight: "#ffffff",
-        correctLevel: window.QRCode.CorrectLevel.H,
-      });
+      new window.QRCode(id, url);
     };
-    draw(a, makeUrl("SHOOTER_A"));
-    draw(b, makeUrl("SHOOTER_B"));
-    draw(e, makeUrl("ENEMY"));
+    draw("qr-shooter-a", makeUrl("SHOOTER_A"));
+    draw("qr-shooter-b", makeUrl("SHOOTER_B"));
+    draw("qr-enemy", makeUrl("ENEMY"));
   }
 
   updateControllerStatuses(players) {
