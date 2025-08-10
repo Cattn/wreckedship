@@ -13,6 +13,7 @@ interface ActiveEntity {
   lane: Lane;
   spawnedAt: number;
   type: "MONSTER" | "OBSTACLE";
+  forRole?: PlayerRole | "ALL";
 }
 
 interface InternalState {
@@ -241,8 +242,9 @@ export class GameManager {
 
     for (const evt of this.state.levelScript) {
       const t = setTimeout(() => {
-        if (evt.type === "MONSTER") this.spawn("MONSTER", evt.lane);
-        else this.spawn("OBSTACLE", evt.lane);
+        const target: PlayerRole | "ALL" = (evt.forRole === "SHOOTER_A" || evt.forRole === "SHOOTER_B") ? (evt.forRole as PlayerRole) : "ALL";
+        if (evt.type === "MONSTER") this.spawn("MONSTER", evt.lane, target);
+        else this.spawn("OBSTACLE", evt.lane, target);
       }, evt.atMs);
       this.state.timers.add(t);
     }
@@ -274,10 +276,10 @@ export class GameManager {
     this.io.emit("round-ended", { round: this.state.roundNumber });
   }
 
-  private spawn(type: "MONSTER" | "OBSTACLE", lane: Lane) {
+  private spawn(type: "MONSTER" | "OBSTACLE", lane: Lane, forRole: PlayerRole | "ALL" = "ALL") {
     if (!this.state.roundActive) return;
     const id = `${type}-${Date.now()}-${Math.floor(Math.random() * 9999)}`;
-    const entity: ActiveEntity = { id, lane, spawnedAt: Date.now(), type };
+    const entity: ActiveEntity = { id, lane, spawnedAt: Date.now(), type, forRole };
     if (type === "MONSTER") this.state.monsters.set(id, entity);
     else this.state.obstacles.set(id, entity);
     this.syncEntities();

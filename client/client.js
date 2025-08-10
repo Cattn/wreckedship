@@ -723,7 +723,7 @@ class GameClient {
   renderEntities() {
     const visibleMonsters =
       this.role === "SHOOTER_A" || this.role === "SHOOTER_B"
-        ? this.entities.monsters || []
+        ? (this.entities.monsters || []).filter((e) => (e.forRole || "ALL") === "ALL" || e.forRole === this.role)
         : [];
     const visibleObstacles =
       this.role === "CAPTAIN" ? this.entities.obstacles || [] : [];

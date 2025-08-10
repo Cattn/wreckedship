@@ -14,6 +14,7 @@ export interface LevelEvent {
   atMs: number;
   type: "MONSTER" | "OBSTACLE";
   lane: Lane;
+  forRole?: "ALL" | "SHOOTER_A" | "SHOOTER_B";
 }
 
 export interface GameStats {
