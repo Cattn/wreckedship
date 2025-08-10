@@ -29,6 +29,8 @@ interface InternalState {
   tideCooldownUntil: number;
   tideDurationMs: number;
   tideCooldownMs: number;
+  controllersByRole: Map<PlayerRole, string>; 
+  controllerRoleBySocket: Map<string, PlayerRole>;
 }
 
 const LANES: Lane[] = ["LEFT", "CENTER", "RIGHT"];
@@ -57,6 +59,8 @@ export class GameManager {
       tideCooldownUntil: 0,
       tideDurationMs: 2000,
       tideCooldownMs: 5000,
+      controllersByRole: new Map(),
+      controllerRoleBySocket: new Map(),
     };
     this.setupSocketHandlers();
   }
@@ -67,8 +71,11 @@ export class GameManager {
 
       socket.emit("players-updated", this.serializePlayers());
 
-      socket.on("join", (role: PlayerRole) => {
+      socket.on("join", (role: PlayerRole | "AUTO" | null | undefined) => {
         this.addPlayer(socket, role);
+      });
+      socket.on("pair-controller", (role: PlayerRole) => {
+        this.pairController(socket, role);
       });
 
       socket.on("movement", (movement: MovementDirection) => {
@@ -84,25 +91,38 @@ export class GameManager {
       });
 
       socket.on("disconnect", () => {
+        const ctrlRole = this.state.controllerRoleBySocket.get(socket.id);
+        if (ctrlRole) {
+          this.state.controllerRoleBySocket.delete(socket.id);
+          const existing = this.state.controllersByRole.get(ctrlRole);
+          if (existing === socket.id) this.state.controllersByRole.delete(ctrlRole);
+          this.emitControllersState();
+          return;
+        }
         this.removePlayer(socket.id);
       });
     });
   }
 
-  private addPlayer(socket: Socket, role: PlayerRole) {
+  private addPlayer(
+    socket: Socket,
+    role: PlayerRole | "AUTO" | null | undefined
+  ) {
     const maxPlayers = 4;
     if (this.state.players.size >= maxPlayers) {
       socket.emit("waiting", { message: "waiting on new game" });
       return;
     }
-    const requested: PlayerRole = role || "CAPTAIN";
+    const requested = (role as PlayerRole | "AUTO" | null) ?? "AUTO";
     const used = new Set(
       [...this.state.players.values()].map((p) => p.role)
     );
     let assigned: PlayerRole | null = null;
-    if (requested === "CAPTAIN") {
-      if (!used.has("CAPTAIN")) assigned = "CAPTAIN";
+    if (requested === "AUTO") {
+      const order: PlayerRole[] = ["CAPTAIN", "SHOOTER_A", "SHOOTER_B", "ENEMY"];
+      assigned = order.find((r) => !used.has(r)) || null;
     } else if (
+      requested === "CAPTAIN" ||
       requested === "SHOOTER_A" ||
       requested === "SHOOTER_B" ||
       requested === "ENEMY"
@@ -122,11 +142,22 @@ export class GameManager {
     this.state.players.set(socket.id, player);
     socket.emit("joined", { id: socket.id, role: assigned });
     this.io.emit("players-updated", this.serializePlayers());
+    this.emitControllersState();
   }
 
   private removePlayer(socketId: string) {
+    const player = this.state.players.get(socketId);
+    if (player) {
+      const role = player.role;
+      const ctrlSocketId = this.state.controllersByRole.get(role);
+      if (ctrlSocketId) {
+        this.state.controllersByRole.delete(role);
+        this.state.controllerRoleBySocket.delete(ctrlSocketId);
+      }
+    }
     this.state.players.delete(socketId);
     this.io.emit("players-updated", this.serializePlayers());
+    this.emitControllersState();
   }
 
   private updateMovement(playerId: string, movement: MovementDirection) {
@@ -138,10 +169,13 @@ export class GameManager {
     }
   }
 
-  private handleShoot(playerId: string, lane: Lane) {
-    const player = this.state.players.get(playerId);
-    if (!player || !this.state.roundActive) return;
-    if (player.role !== "SHOOTER_A" && player.role !== "SHOOTER_B") return;
+  private handleShoot(senderSocketId: string, lane: Lane) {
+    if (!this.state.roundActive) return;
+    let role: PlayerRole | null = null;
+    const player = this.state.players.get(senderSocketId);
+    if (player) role = player.role;
+    else role = this.state.controllerRoleBySocket.get(senderSocketId) || null;
+    if (role !== "SHOOTER_A" && role !== "SHOOTER_B") return;
 
     const offset = this.getTideOffset();
     const hit = [...this.state.monsters.values()].find(
@@ -149,11 +183,14 @@ export class GameManager {
     );
     if (hit) {
       this.state.monsters.delete(hit.id);
-      player.kills = (player.kills || 0) + 1;
+      const shooterPlayer = [...this.state.players.values()].find(
+        (p) => p.role === role
+      );
+      if (shooterPlayer) shooterPlayer.kills = (shooterPlayer.kills || 0) + 1;
       this.io.emit("monster-destroyed", { id: hit.id, lane: hit.lane });
       this.syncEntities();
     } else {
-      this.io.to(playerId).emit("shot-missed", { lane });
+      this.io.to(senderSocketId).emit("shot-missed", { lane });
     }
   }
 
@@ -235,10 +272,13 @@ export class GameManager {
     return pickLane(idx + offset);
   }
 
-  private activateTide(playerId: string, direction: "LEFT" | "RIGHT") {
-    const p = this.state.players.get(playerId);
-    if (!p || !this.state.roundActive) return;
-    if (p.role !== "ENEMY") return;
+  private activateTide(senderSocketId: string, direction: "LEFT" | "RIGHT") {
+    if (!this.state.roundActive) return;
+    let role: PlayerRole | null = null;
+    const p = this.state.players.get(senderSocketId);
+    if (p) role = p.role;
+    else role = this.state.controllerRoleBySocket.get(senderSocketId) || null;
+    if (role !== "ENEMY") return;
     const now = Date.now();
     if (now < this.state.tideCooldownUntil) return;
     const offset = direction === "LEFT" ? -1 : 1;
@@ -257,6 +297,32 @@ export class GameManager {
       }
     }, this.state.tideDurationMs + 10);
     this.state.timers.add(t);
+  }
+
+  private pairController(socket: Socket, role: PlayerRole) {
+    if (role !== "SHOOTER_A" && role !== "SHOOTER_B" && role !== "ENEMY") return;
+    const hasPlayerForRole = [...this.state.players.values()].some(
+      (p) => p.role === role
+    );
+    if (!hasPlayerForRole) return;
+    const prevRole = this.state.controllerRoleBySocket.get(socket.id);
+    if (prevRole) {
+      this.state.controllerRoleBySocket.delete(socket.id);
+      const existing = this.state.controllersByRole.get(prevRole);
+      if (existing === socket.id) this.state.controllersByRole.delete(prevRole);
+    }
+    this.state.controllersByRole.set(role, socket.id);
+    this.state.controllerRoleBySocket.set(socket.id, role);
+    this.emitControllersState();
+  }
+
+  private emitControllersState() {
+    const readiness = {
+      SHOOTER_A: this.state.controllersByRole.has("SHOOTER_A"),
+      SHOOTER_B: this.state.controllersByRole.has("SHOOTER_B"),
+      ENEMY: this.state.controllersByRole.has("ENEMY"),
+    };
+    this.io.emit("controllers-updated", readiness);
   }
 
   public getGameStats(): GameStats {

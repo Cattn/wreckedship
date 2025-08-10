@@ -363,7 +363,7 @@ class GameClient {
     if (roleParam === "SHOOTER") return "SHOOTER_A";
     if (["CAPTAIN", "SHOOTER_A", "SHOOTER_B", "ENEMY"].includes(roleParam))
       return roleParam;
-    return "CAPTAIN";
+    return null;
   }
 
   updateRoleHud() {
@@ -406,7 +406,7 @@ class GameClient {
     const url = overrideUrl || `${protocol}//${resolvedHost}`;
     this.socket = io(url, { transports: ["websocket"], upgrade: false });
     this.socket.on("connect", () => {
-      this.socket.emit("join", this.role);
+      this.socket.emit("join", this.role || "AUTO");
     });
     this.socket.on("joined", (payload) => {
       if (payload && payload.role) {
@@ -430,6 +430,9 @@ class GameClient {
     });
     this.socket.on("players-updated", (players) => {
       this.updateControllerStatuses(players || []);
+    });
+    this.socket.on("controllers-updated", (readiness) => {
+      this.applyControllersReadiness(readiness || {});
     });
     this.socket.on("monster-destroyed", () => {});
     this.socket.on("round-started", () => {});
@@ -519,14 +522,20 @@ class GameClient {
   }
 
   updateControllerStatuses(players) {
-    if (this.role === "CAPTAIN") return;
     const byRole = new Map();
     for (const p of players) byRole.set(p.role, p);
+    const showForCaptain = this.role === "CAPTAIN";
     const apply = (roleKey, qrId, statusId) => {
       const qr = document.getElementById(qrId);
       const st = document.getElementById(statusId);
       const player = byRole.get(roleKey);
       if (!qr || !st) return;
+      if (showForCaptain) { 
+        qr.style.display = "none";
+        st.textContent = player ? "Connected" : "--";
+        st.classList.toggle("ready", !!player);
+        return;
+      }
       if (player) {
         qr.style.display = "none";
         st.textContent = "Ready";
@@ -540,6 +549,32 @@ class GameClient {
     apply("SHOOTER_A", "qr-shooter-a", "status-shooter-a");
     apply("SHOOTER_B", "qr-shooter-b", "status-shooter-b");
     apply("ENEMY", "qr-enemy", "status-enemy");
+  }
+
+  applyControllersReadiness(readiness) {
+    const set = (id, isReady) => {
+      const qr = document.getElementById(id.qr);
+      const st = document.getElementById(id.status);
+      if (!qr || !st) return;
+      if (this.role === "CAPTAIN") {
+        qr.style.display = "none";
+        st.textContent = isReady ? "Ready" : "Scan to connect";
+        st.classList.toggle("ready", !!isReady);
+        return;
+      }
+      if (isReady) {
+        qr.style.display = "none";
+        st.textContent = "Ready";
+        st.classList.add("ready");
+      } else {
+        qr.style.display = "block";
+        st.textContent = "Scan to connect";
+        st.classList.remove("ready");
+      }
+    };
+    set({ qr: "qr-shooter-a", status: "status-shooter-a" }, !!readiness.SHOOTER_A);
+    set({ qr: "qr-shooter-b", status: "status-shooter-b" }, !!readiness.SHOOTER_B);
+    set({ qr: "qr-enemy", status: "status-enemy" }, !!readiness.ENEMY);
   }
 
   renderCursor() {

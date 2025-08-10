@@ -82,7 +82,7 @@
       this.socket = io(this.socketUrl, { transports: ["websocket"], upgrade: false });
       this.socket.on("connect", () => {
         document.getElementById("status").textContent = "Connected";
-        this.socket.emit("join", this.role);
+        this.socket.emit("pair-controller", this.role);
       });
       this.socket.on("disconnect", () => {
         document.getElementById("status").textContent = "Disconnected";
