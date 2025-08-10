@@ -176,20 +176,30 @@ export class GameManager {
     else role = this.state.controllerRoleBySocket.get(senderSocketId) || null;
     const accepted = !!this.state.roundActive && (role === "SHOOTER_A" || role === "SHOOTER_B");
     const targetPlayer = [...this.state.players.values()].find((p) => p.role === role);
+    const offset = this.getTideOffset();
+    const now = Date.now();
+    let hit: ActiveEntity | undefined;
+    let bestSpawn = Number.POSITIVE_INFINITY;
+    if (accepted) {
+      for (const m of this.state.monsters.values()) {
+        if (this.mapLaneWithOffset(m.lane, offset) !== lane) continue;
+        const s = typeof m.spawnedAt === "number" ? m.spawnedAt : now;
+        if (s < bestSpawn) {
+          bestSpawn = s;
+          hit = m;
+        }
+      }
+    }
     if (targetPlayer) {
       this.io.to(targetPlayer.id).emit("controller-shake", {
         type: "SHOOT",
         fromRole: role,
         lane,
         accepted,
+        hitId: hit ? hit.id : null,
       });
     }
     if (!accepted) return;
-
-    const offset = this.getTideOffset();
-    const hit = [...this.state.monsters.values()].find(
-      (m) => this.mapLaneWithOffset(m.lane, offset) === lane
-    );
     if (hit) {
       this.state.monsters.delete(hit.id);
       const shooterPlayer = [...this.state.players.values()].find((p) => p.role === role);

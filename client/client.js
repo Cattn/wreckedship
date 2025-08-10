@@ -663,6 +663,15 @@ class GameClient {
     const accepted = payload && payload.accepted ? "accepted" : "queued";
     if (payload && payload.type === "SHOOT") {
       el.textContent = `${who} shake: SHOOT (${accepted})`;
+      if (payload.hitId) {
+        const elHit = this.entityElements && this.entityElements.get(payload.hitId);
+        if (elHit) {
+          this.removeEntityImmediate(payload.hitId);
+          if (this.entities && Array.isArray(this.entities.monsters)) {
+            this.entities.monsters = this.entities.monsters.filter((m) => m.id !== payload.hitId);
+          }
+        }
+      }
     } else if (payload && payload.type === "TIDE") {
       el.textContent = `${who} shake: TIDE ${payload.direction || ""} (${accepted})`;
     } else {
