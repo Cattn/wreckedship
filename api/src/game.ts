@@ -492,61 +492,23 @@ export class GameManager {
 
   private defaultLevelScript(): LevelEvent[] {
     const events: LevelEvent[] = [];
-    let t = 500;
-    for (let j = 0; j < 6; j += 1) {
-      const lane: Lane = pickLane(j + 1);
-      events.push({ atMs: 800 + j * 700, type: "OBSTACLE", lane });
-    }
-    for (let i = 0; i < 6; i += 1) {
-      const lane: Lane = pickLane(i);
-      events.push({ atMs: t, type: "MONSTER", lane });
-      t += 800;
-    }
-    for (let i = 0; i < 10; i += 1) {
-      const lane: Lane = pickLane(i + 1);
-      events.push({ atMs: t, type: "MONSTER", lane, forRole: "SHOOTER_A" });
-      t += 600;
-    }
-    for (let i = 0; i < 10; i += 1) {
-      const lane: Lane = pickLane(i + 2);
-      events.push({ atMs: t, type: "MONSTER", lane, forRole: "SHOOTER_B" });
-      t += 600;
-    }
-    for (let i = 0; i < 10; i += 1) {
-      const lane: Lane = pickLane(i);
-      events.push({ atMs: t, type: "OBSTACLE", lane });
-      t += 1000;
-    }
-    for (let i = 0; i < 10; i += 1) {
-      const laneM: Lane = pickLane(i + 1);
-      const laneO: Lane = pickLane(i + 2);
-      events.push({ atMs: t, type: "MONSTER", lane: laneM });
-      events.push({ atMs: t + 200, type: "OBSTACLE", lane: laneO });
-      t += 900;
-    }
-    for (let i = 0; i < 10; i += 1) {
-      const laneA: Lane = pickLane(i);
-      const laneB: Lane = pickLane(i + 1);
-      events.push({ atMs: t, type: "MONSTER", lane: laneA, forRole: "SHOOTER_A" });
-      events.push({ atMs: t, type: "MONSTER", lane: laneB, forRole: "SHOOTER_B" });
-      t += 700;
-    }
-    for (let i = 0; i < 28; i += 1) {
-      const lane: Lane = pickLane(i + (i % 2));
-      events.push({ atMs: t, type: "MONSTER", lane });
-      t += 300;
-    }
-    for (let i = 0; i < 10; i += 1) {
-      const laneO: Lane = pickLane(i + 1);
-      events.push({ atMs: t, type: "OBSTACLE", lane: laneO });
-      if (i % 3 === 0) {
-        const laneA: Lane = pickLane(i + 2);
-        const laneB: Lane = pickLane(i);
-        events.push({ atMs: t + 150, type: "MONSTER", lane: laneA, forRole: "SHOOTER_A" });
-        events.push({ atMs: t + 150, type: "MONSTER", lane: laneB, forRole: "SHOOTER_B" });
+    const obstacleTimes = [
+      500, 1700, 2900, 4100, 5300, 6500, 7700, 8900, 10100,
+      11300, 12500, 13700, 14900, 16100, 17300,
+    ];
+    for (let i = 0; i < obstacleTimes.length; i += 1) {
+      const laneO: Lane = pickLane(i);
+      const tO: number = obstacleTimes[i] as number;
+      const spawnAhead: number = Math.max(0, tO - 500);
+      const laneMA: Lane = pickLane(i + 1);
+      const laneMB: Lane = pickLane(i + 2);
+      const shooterRole: PlayerRole = i % 2 === 0 ? "SHOOTER_A" : "SHOOTER_B";
+      events.push({ atMs: spawnAhead, type: "MONSTER", lane: laneMA, forRole: shooterRole });
+      if (i % 3 === 2) {
+        events.push({ atMs: spawnAhead + 200, type: "MONSTER", lane: laneMB, forRole: "ALL" });
       }
-      t += 1100;
+      events.push({ atMs: tO, type: "OBSTACLE", lane: laneO });
     }
-    return events;
+    return events.sort((a, b) => a.atMs - b.atMs);
   }
 }
