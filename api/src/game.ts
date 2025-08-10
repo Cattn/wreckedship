@@ -491,6 +491,10 @@ export class GameManager {
   private defaultLevelScript(): LevelEvent[] {
     const events: LevelEvent[] = [];
     let t = 500;
+    for (let j = 0; j < 6; j += 1) {
+      const lane: Lane = pickLane(j + 1);
+      events.push({ atMs: 800 + j * 700, type: "OBSTACLE", lane });
+    }
     for (let i = 0; i < 6; i += 1) {
       const lane: Lane = pickLane(i);
       events.push({ atMs: t, type: "MONSTER", lane });

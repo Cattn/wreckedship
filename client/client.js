@@ -357,6 +357,7 @@ class GameClient {
     this.livesEl = null;
     this.clearedObstacles = new Set();
     this._pendingObstacleRemoval = new Map();
+    this._localSpawnedAt = new Map();
     this.updateRoleHud();
     this.setupCursorSprites();
     this.setupLaneBackgrounds();
@@ -471,6 +472,7 @@ class GameClient {
     this.socket.on("round-ended", () => {
       this.entities = { monsters: [], obstacles: [] };
       this.renderEntities();
+      if (this._localSpawnedAt) this._localSpawnedAt.clear();
     });
     this.socket.on("lives-updated", (payload) => {
       if (!payload) return;
@@ -683,6 +685,7 @@ class GameClient {
       console.log("entity element not found or no parent", entityId);
     }
     if (this.entityElements) this.entityElements.delete(entityId);
+    if (this._localSpawnedAt) this._localSpawnedAt.delete(entityId);
   }
 
   ensureToast() {
@@ -839,6 +842,7 @@ class GameClient {
       if (!visibleIds.has(id)) {
         if (el.parentElement) el.parentElement.removeChild(el);
         this.entityElements.delete(id);
+        if (this._localSpawnedAt) this._localSpawnedAt.delete(id);
       }
     }
 
@@ -850,6 +854,9 @@ class GameClient {
         const el = this.createEntityElement(entity.type);
         laneContainer.appendChild(el);
         this.entityElements.set(entity.id, el);
+        if (this._localSpawnedAt && !this._localSpawnedAt.has(entity.id)) {
+          this._localSpawnedAt.set(entity.id, Date.now());
+        }
       } else if (existing.parentElement !== laneContainer) {
         laneContainer.appendChild(existing);
       }
@@ -890,7 +897,8 @@ class GameClient {
     for (const [id, el] of this.entityElements.entries()) {
       const data = index.get(id);
       if (!data) continue;
-            const elapsed = Math.max(0, now - (data.spawnedAt || now));
+            const base = (this._localSpawnedAt && this._localSpawnedAt.get(id)) || data.spawnedAt || now;
+            const elapsed = Math.max(0, now - base);
             const t = Math.min(1, elapsed / this.travelMs);
             const container = el.parentElement;
             if (!container) continue;
