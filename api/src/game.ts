@@ -90,15 +90,29 @@ export class GameManager {
   }
 
   private addPlayer(socket: Socket, role: PlayerRole) {
-    if (!role) role = "CAPTAIN";
+    const maxPlayers = 4;
+    if (this.state.players.size >= maxPlayers) {
+      socket.emit("waiting", { message: "waiting on new game" });
+      return;
+    }
+    const roles: PlayerRole[] = [
+      "CAPTAIN",
+      "SHOOTER_A",
+      "SHOOTER_B",
+      "ENEMY",
+    ];
+    const used = new Set(
+      [...this.state.players.values()].map((p) => p.role)
+    );
+    const assigned = roles.find((r) => !used.has(r)) || "CAPTAIN";
     const player: PlayerInfo = {
       id: socket.id,
-      role,
+      role: assigned,
       state: "CONNECTED",
       kills: 0,
     };
     this.state.players.set(socket.id, player);
-    socket.emit("joined", { id: socket.id, role });
+    socket.emit("joined", { id: socket.id, role: assigned });
     this.io.emit("players-updated", this.serializePlayers());
   }
 

@@ -404,6 +404,22 @@ class GameClient {
     this.socket.on("connect", () => {
       this.socket.emit("join", this.role);
     });
+    this.socket.on("joined", (payload) => {
+      if (payload && payload.role) {
+        this.role = payload.role;
+        this.updateRoleHud();
+        this.configureControllerCardsVisibility();
+      }
+      const waitEl = document.getElementById("waiting-message");
+      if (waitEl) waitEl.style.display = "none";
+    });
+    this.socket.on("waiting", () => {
+      const waitEl = document.getElementById("waiting-message");
+      if (waitEl) {
+        waitEl.textContent = "waiting on new game";
+        waitEl.style.display = "block";
+      }
+    });
     this.socket.on("entities", (payload) => {
       this.entities = payload || { monsters: [], obstacles: [] };
       this.renderEntities();
