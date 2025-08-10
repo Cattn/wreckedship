@@ -27,6 +27,8 @@ app.use((req: Request, res: Response, next: NextFunction) => {
 const server = createServer(app);
 const io = new SocketServer(server, {
   cors: { origin: "*", methods: ["GET", "POST"] },
+  serveClient: true,
+  path: "/socket.io",
 });
 
 const game = new GameManager(io);
