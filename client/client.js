@@ -74,28 +74,37 @@ class PersonTracker {
   }
 
   async setupPoseDetection() {
-    this.pose = new Pose({
-      locateFile: (file) => {
-        return `https://cdn.jsdelivr.net/npm/@mediapipe/pose/${file}`;
-      },
-    });
+    try {
+      this.pose = new Pose({
+        locateFile: (file) => {
+          return `https://cdn.jsdelivr.net/npm/@mediapipe/pose/${file}`;
+        },
+      });
 
-    this.pose.setOptions({
-      modelComplexity: 0,
-      smoothLandmarks: true,
-      enableSegmentation: false,
-      smoothSegmentation: false,
-      minDetectionConfidence: 0.6,
-      minTrackingConfidence: 0.5,
-      upperbodyOnly: false,
-    });
+      this.pose.setOptions({
+        modelComplexity: 0,
+        smoothLandmarks: true,
+        enableSegmentation: false,
+        smoothSegmentation: false,
+        minDetectionConfidence: 0.6,
+        minTrackingConfidence: 0.5,
+        upperbodyOnly: false,
+      });
 
-    this.pose.onResults(this.onPoseResults.bind(this));
+      this.pose.onResults(this.onPoseResults.bind(this));
+    } catch (err) {
+      this.showError("Pose module blocked by CSP. Movement disabled.");
+      console.error("Pose init error:", err);
+      this.pose = null;
+    }
 
     this.camera = new Camera(this.video, {
       onFrame: async () => {
-        if (this.isInitialized) {
-          await this.pose.send({ image: this.video });
+        if (this.isInitialized && this.pose) {
+          try {
+            await this.pose.send({ image: this.video });
+          } catch (e) {
+          }
         }
       },
       width: 640,
@@ -342,6 +351,7 @@ class GameClient {
     this.setupLaneBackgrounds();
     this.setupSocket();
     this.bindMovementCallbacks();
+    this.configureControllerCardsVisibility();
     this.renderQRCodes();
     this.renderCursor();
     this.startAnimationLoop();
@@ -361,12 +371,32 @@ class GameClient {
     if (el) el.textContent = `Role: ${this.role}`;
   }
 
+  configureControllerCardsVisibility() {
+    const roleToCardId = {
+      SHOOTER_A: "card-shooter-a",
+      SHOOTER_B: "card-shooter-b",
+      ENEMY: "card-enemy",
+      CAPTAIN: null,
+    };
+    const showId = roleToCardId[this.role] || null;
+    const cards = [
+      document.getElementById("card-shooter-a"),
+      document.getElementById("card-shooter-b"),
+      document.getElementById("card-enemy"),
+    ];
+    for (const c of cards) if (c) c.style.display = "none";
+    if (showId) {
+      const el = document.getElementById(showId);
+      if (el) el.style.display = "block";
+    }
+  }
+
   setupSocket() {
     const overrideUrl = window.SOCKET_URL;
     const { protocol, hostname, port } = window.location;
     const devApiHost = `${hostname}:5233`;
     const resolvedHost =
-      port === "4031" || hostname === "localhost" || hostname === "127.0.0.1"
+      port === "4032" || hostname === "localhost" || hostname === "127.0.0.1"
         ? devApiHost
         : window.location.host;
     const url = overrideUrl || `${protocol}//${resolvedHost}`;
@@ -449,7 +479,7 @@ class GameClient {
     const { protocol, hostname, port } = window.location;
     const devApiHost = `${hostname}:5233`;
     const resolvedHost =
-      port === "4031" || hostname === "localhost" || hostname === "127.0.0.1"
+      port === "4032" || hostname === "localhost" || hostname === "127.0.0.1"
         ? devApiHost
         : window.location.host;
     const socketUrl = (window.SOCKET_URL || `${protocol}//${resolvedHost}`);
