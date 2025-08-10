@@ -358,6 +358,7 @@ class GameClient {
     this.clearedObstacles = new Set();
     this._pendingObstacleRemoval = new Map();
     this._localSpawnedAt = new Map();
+    this.clearedMonsters = new Set();
     this.updateRoleHud();
     this.setupCursorSprites();
     this.setupLaneBackgrounds();
@@ -473,6 +474,8 @@ class GameClient {
       this.entities = { monsters: [], obstacles: [] };
       this.renderEntities();
       if (this._localSpawnedAt) this._localSpawnedAt.clear();
+      if (this.clearedMonsters) this.clearedMonsters.clear();
+      if (this.clearedObstacles) this.clearedObstacles.clear();
     });
     this.socket.on("lives-updated", (payload) => {
       if (!payload) return;
@@ -829,7 +832,7 @@ class GameClient {
   renderEntities() {
     const visibleMonsters =
       this.role === "SHOOTER_A" || this.role === "SHOOTER_B"
-        ? (this.entities.monsters || []).filter((e) => (e.forRole || "ALL") === "ALL" || e.forRole === this.role)
+        ? (this.entities.monsters || []).filter((e) => ((e.forRole || "ALL") === "ALL" || e.forRole === this.role) && !this.clearedMonsters.has(e.id))
         : [];
     const visibleObstacles =
       this.role === "CAPTAIN"
@@ -886,7 +889,7 @@ class GameClient {
     const now = Date.now();
     const visibleMonsters =
       this.role === "SHOOTER_A" || this.role === "SHOOTER_B"
-        ? this.entities.monsters || []
+        ? (this.entities.monsters || []).filter((e) => !this.clearedMonsters.has(e.id))
         : [];
     const visibleObstacles =
       this.role === "CAPTAIN" ? (this.entities.obstacles || []).filter((e) => !this.clearedObstacles.has(e.id)) : [];
@@ -904,7 +907,7 @@ class GameClient {
             if (!container) continue;
             const ch = container.clientHeight || container.getBoundingClientRect().height;
             const eh = el.offsetHeight || 18;
-            const y = t * Math.max(0, ch - eh);
+            const y = t * Math.max(0, ch - eh) + Math.min(60, (t - 1) * 120);
             el.style.top = `${y}px`;
 
             if (this.role === "CAPTAIN" && data.type === "OBSTACLE" && t >= 1) {
@@ -915,6 +918,12 @@ class GameClient {
                   this._pendingObstacleRemoval.delete(id);
                 }, 650);
                 this._pendingObstacleRemoval.set(id, h);
+              }
+            }
+            if ((this.role === "SHOOTER_A" || this.role === "SHOOTER_B") && data.type === "MONSTER" && t >= 1) {
+              if (!this.clearedMonsters.has(id)) {
+                this.clearedMonsters.add(id);
+                setTimeout(() => this.removeEntityImmediate(id), 500);
               }
             }
     }
