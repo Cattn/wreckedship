@@ -14,11 +14,13 @@ class PersonTracker {
     this.lastFpsTime = Date.now();
 
     this.baselineX = null;
+    this.initialBaselineX = null;
     this.currentX = null;
     this.movementThreshold = 0.15;
     this.stillFramesThreshold = 30;
     this.stillFramesCount = 0;
     this.lastMovement = "STILL";
+    this.baselineDriftLimit = 0.04;
 
     this.movementCallbacks = {
       onMoveLeft: () => console.log("Move Left"),
@@ -150,6 +152,7 @@ class PersonTracker {
 
       if (this.baselineX === null) {
         this.baselineX = centerX;
+        this.initialBaselineX = centerX;
         this.updateMovementStatus("CALIBRATED");
         return;
       }
@@ -174,7 +177,11 @@ class PersonTracker {
       this.stillFramesCount++;
 
       if (this.stillFramesCount > this.stillFramesThreshold) {
-        this.baselineX = this.currentX;
+        const base = typeof this.initialBaselineX === "number" ? this.initialBaselineX : this.baselineX;
+        const min = Math.max(0, base - this.baselineDriftLimit);
+        const max = Math.min(1, base + this.baselineDriftLimit);
+        const target = Math.min(max, Math.max(min, this.currentX));
+        this.baselineX = target;
         this.stillFramesCount = 0;
       }
     }
@@ -312,6 +319,7 @@ class PersonTracker {
 
   resetMovementTracking() {
     this.baselineX = null;
+    this.initialBaselineX = null;
     this.currentX = null;
     this.stillFramesCount = 0;
     if (this.lastMovement !== "STILL") {
