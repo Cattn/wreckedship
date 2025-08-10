@@ -106,6 +106,18 @@
         margin-bottom: 10px;
         opacity: 0.85;
       }
+      #lives {
+        position: absolute;
+        top: 10px;
+        right: 12px;
+        font-size: 18px;
+        letter-spacing: 2px;
+        user-select: none;
+        padding: 6px 8px;
+        border-radius: 10px;
+        background: rgba(17, 24, 39, 0.55);
+        border: 1px solid var(--panel-border);
+      }
       #controllers {
         display: grid;
         grid-template-columns: repeat(3, 1fr);
@@ -194,6 +206,7 @@
       <div id="hud">
         <div id="role">Role: -</div>
       </div>
+      <div id="lives" aria-hidden="true"></div>
       <div id="waiting-message" style="display:none; margin: 8px 0; padding: 8px 10px; border: 1px solid var(--panel-border); border-radius: 8px; background: var(--panel-bg); color:#ffe66d;">waiting on new game</div>
       <div id="controllers">
         <div class="controller-card" id="card-shooter-a">

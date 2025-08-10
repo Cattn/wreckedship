@@ -347,6 +347,10 @@ class GameClient {
     this.travelMs = 2200;
     this.rafId = null;
     this.toastEl = null;
+    this.lives = 3;
+    this.livesEl = null;
+    this.clearedObstacles = new Set();
+    this._pendingObstacleRemoval = new Map();
     this.updateRoleHud();
     this.setupCursorSprites();
     this.setupLaneBackgrounds();
@@ -355,6 +359,8 @@ class GameClient {
     this.configureControllerCardsVisibility();
     this.renderQRCodes();
     this.renderCursor();
+    this.ensureLivesEl();
+    this.renderLives();
     this.startAnimationLoop();
   }
 
@@ -459,6 +465,10 @@ class GameClient {
     this.socket.on("round-ended", () => {
       this.entities = { monsters: [], obstacles: [] };
       this.renderEntities();
+    });
+    this.socket.on("lives-updated", (payload) => {
+      if (!payload) return;
+      this.applyLives(typeof payload.lives === "number" ? payload.lives : this.lives);
     });
   }
 
@@ -657,6 +667,39 @@ class GameClient {
     return el;
   }
 
+  ensureLivesEl() {
+    if (this.livesEl) return this.livesEl;
+    const existing = document.getElementById("lives");
+    const el = existing || document.createElement("div");
+    if (!existing) el.id = "lives";
+    el.style.position = "fixed";
+    el.style.top = "12px";
+    el.style.right = "12px";
+    el.style.padding = "6px 8px";
+    el.style.background = "rgba(17,24,39,0.55)";
+    el.style.border = "1px solid #334155";
+    el.style.borderRadius = "10px";
+    el.style.fontSize = "18px";
+    el.style.lineHeight = "1";
+    el.style.letterSpacing = "2px";
+    el.style.userSelect = "none";
+    el.style.backdropFilter = "blur(6px)";
+    if (!existing) document.body.appendChild(el);
+    this.livesEl = el;
+    return el;
+  }
+
+  renderLives() {
+    const el = this.ensureLivesEl();
+    const hearts = Array(Math.max(0, this.lives || 0)).fill("❤️").join(" ");
+    el.textContent = hearts || "";
+  }
+
+  applyLives(n) {
+    this.lives = n;
+    this.renderLives();
+  }
+
   showShakeToast(payload) {
     const el = this.ensureToast();
     const who = payload && payload.fromRole ? payload.fromRole : "Controller";
@@ -726,7 +769,9 @@ class GameClient {
         ? (this.entities.monsters || []).filter((e) => (e.forRole || "ALL") === "ALL" || e.forRole === this.role)
         : [];
     const visibleObstacles =
-      this.role === "CAPTAIN" ? this.entities.obstacles || [] : [];
+      this.role === "CAPTAIN"
+        ? (this.entities.obstacles || []).filter((e) => !this.clearedObstacles.has(e.id))
+        : [];
     const visible = [...visibleMonsters, ...visibleObstacles];
     const visibleIds = new Set(visible.map((e) => e.id));
 
@@ -766,7 +811,7 @@ class GameClient {
         ? this.entities.monsters || []
         : [];
     const visibleObstacles =
-      this.role === "CAPTAIN" ? this.entities.obstacles || [] : [];
+      this.role === "CAPTAIN" ? (this.entities.obstacles || []).filter((e) => !this.clearedObstacles.has(e.id)) : [];
     const index = new Map();
     for (const e of visibleMonsters) index.set(e.id, e);
     for (const e of visibleObstacles) index.set(e.id, e);
@@ -782,6 +827,17 @@ class GameClient {
             const eh = el.offsetHeight || 18;
             const y = t * Math.max(0, ch - eh);
             el.style.top = `${y}px`;
+
+            if (this.role === "CAPTAIN" && data.type === "OBSTACLE" && t >= 1) {
+              if (!this._pendingObstacleRemoval.has(id)) {
+                const h = setTimeout(() => {
+                  this.clearedObstacles.add(id);
+                  this.removeEntityImmediate(id);
+                  this._pendingObstacleRemoval.delete(id);
+                }, 650);
+                this._pendingObstacleRemoval.set(id, h);
+              }
+            }
     }
   }
 }

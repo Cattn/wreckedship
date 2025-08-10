@@ -32,6 +32,8 @@ interface InternalState {
   tideCooldownMs: number;
   controllersByRole: Map<PlayerRole, string>; 
   controllerRoleBySocket: Map<string, PlayerRole>;
+  lives?: number;
+  lossProcessedIds?: Set<string>;
 }
 
 const LANES: Lane[] = ["LEFT", "CENTER", "RIGHT"];
@@ -43,6 +45,7 @@ const pickLane = (index: number): Lane => {
 export class GameManager {
   private io: Server;
   private state: InternalState;
+  private travelMs = 2200;
 
   constructor(io: Server) {
     this.io = io;
@@ -62,6 +65,8 @@ export class GameManager {
       tideCooldownMs: 5000,
       controllersByRole: new Map(),
       controllerRoleBySocket: new Map(),
+      lives: 3,
+      lossProcessedIds: new Set(),
     };
     this.setupSocketHandlers();
   }
@@ -102,6 +107,8 @@ export class GameManager {
         }
         this.removePlayer(socket.id);
       });
+
+      socket.emit("lives-updated", { lives: this.state.lives || 0 });
     });
   }
 
@@ -239,6 +246,9 @@ export class GameManager {
         ? [...levelScript]
         : this.defaultLevelScript();
     this.state.roundStartTs = Date.now();
+    this.state.lives = 3;
+    if (!this.state.lossProcessedIds) this.state.lossProcessedIds = new Set();
+    this.state.lossProcessedIds.clear();
 
     for (const evt of this.state.levelScript) {
       const t = setTimeout(() => {
@@ -257,6 +267,7 @@ export class GameManager {
     this.state.timers.add(endTimer);
 
     this.io.emit("round-started", { round: this.state.roundNumber });
+    this.emitLives();
     return true;
   }
 
@@ -283,6 +294,37 @@ export class GameManager {
     if (type === "MONSTER") this.state.monsters.set(id, entity);
     else this.state.obstacles.set(id, entity);
     this.syncEntities();
+
+    if (type === "MONSTER") {
+      const t = setTimeout(() => {
+        if (!this.state.roundActive) return;
+        const exists = this.state.monsters.has(id);
+        if (!exists) return;
+        const key = `MONSTER-${id}`;
+        if (this.state.lossProcessedIds && this.state.lossProcessedIds.has(key)) return;
+        if (this.state.lossProcessedIds) this.state.lossProcessedIds.add(key);
+        this.loseLife();
+      }, this.travelMs + 550);
+      this.state.timers.add(t);
+    } else if (type === "OBSTACLE") {
+      const t = setTimeout(() => {
+        if (!this.state.roundActive) return;
+        const exists = this.state.obstacles.has(id);
+        if (!exists) return;
+        const key = `OBSTACLE-${id}-HIT`;
+        if (this.state.lossProcessedIds && this.state.lossProcessedIds.has(key)) return;
+        const offset = this.getTideOffset();
+        const mappedLane = this.mapLaneWithOffset(lane, offset);
+        const captain = [...this.state.players.values()].find((p) => p.role === "CAPTAIN");
+        if (!captain) return;
+        const captainLane = this.movementToLane(captain.lastMovement as MovementDirection | undefined);
+        if (captainLane === mappedLane) {
+          if (this.state.lossProcessedIds) this.state.lossProcessedIds.add(key);
+          this.loseLife();
+        }
+      }, this.travelMs);
+      this.state.timers.add(t);
+    }
   }
 
   private syncEntities() {
@@ -368,6 +410,18 @@ export class GameManager {
       ENEMY: this.state.controllersByRole.has("ENEMY"),
     };
     this.io.emit("controllers-updated", readiness);
+  }
+
+  private emitLives() {
+    this.io.emit("lives-updated", { lives: this.state.lives || 0 });
+  }
+
+  private loseLife() {
+    if (!this.state.roundActive) return;
+    const current = typeof this.state.lives === "number" ? this.state.lives : 0;
+    this.state.lives = Math.max(0, current - 1);
+    this.emitLives();
+    if ((this.state.lives || 0) <= 0) this.endRound();
   }
 
   public getGameStats(): GameStats {

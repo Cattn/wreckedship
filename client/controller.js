@@ -32,6 +32,8 @@
       this.motionEnabled = false;
       this.accThreshold = 18;
       this.feedbackTimer = null;
+      this.lives = 3;
+      this.livesEl = null;
       this.init();
     }
 
@@ -64,6 +66,10 @@
       });
       this.socket.on("controller-shake", (payload) => {
         this.showFeedback("Shake: good!");
+      });
+      this.socket.on("lives-updated", (payload) => {
+        if (!payload) return;
+        this.applyLives(typeof payload.lives === "number" ? payload.lives : this.lives);
       });
     }
 
@@ -136,6 +142,36 @@
       this.feedbackTimer = setTimeout(() => {
         el.style.opacity = "0.85";
       }, 1000);
+    }
+
+    ensureLivesEl() {
+      if (this.livesEl) return this.livesEl;
+      const el = document.createElement("div");
+      el.style.position = "fixed";
+      el.style.top = "12px";
+      el.style.right = "12px";
+      el.style.padding = "6px 8px";
+      el.style.background = "rgba(17,24,39,0.55)";
+      el.style.border = "1px solid #334155";
+      el.style.borderRadius = "10px";
+      el.style.fontSize = "18px";
+      el.style.lineHeight = "1";
+      el.style.letterSpacing = "2px";
+      el.style.userSelect = "none";
+      document.body.appendChild(el);
+      this.livesEl = el;
+      return el;
+    }
+
+    renderLives() {
+      const el = this.ensureLivesEl();
+      const hearts = Array(Math.max(0, this.lives || 0)).fill("❤️").join(" ");
+      el.textContent = hearts || "";
+    }
+
+    applyLives(n) {
+      this.lives = n;
+      this.renderLives();
     }
   }
 
