@@ -907,23 +907,24 @@ class GameClient {
             if (!container) continue;
             const ch = container.clientHeight || container.getBoundingClientRect().height;
             const eh = el.offsetHeight || 18;
-            const y = t * Math.max(0, ch - eh) + Math.min(60, (t - 1) * 120);
+            const beyond = Math.max(0, (t - 1) * 200);
+            const y = t * Math.max(0, ch - eh) + beyond;
             el.style.top = `${y}px`;
 
-            if (this.role === "CAPTAIN" && data.type === "OBSTACLE" && t >= 1) {
+            if (this.role === "CAPTAIN" && data.type === "OBSTACLE" && t >= 1.05) {
               if (!this._pendingObstacleRemoval.has(id)) {
                 const h = setTimeout(() => {
                   this.clearedObstacles.add(id);
                   this.removeEntityImmediate(id);
                   this._pendingObstacleRemoval.delete(id);
-                }, 650);
+                }, 400);
                 this._pendingObstacleRemoval.set(id, h);
               }
             }
-            if ((this.role === "SHOOTER_A" || this.role === "SHOOTER_B") && data.type === "MONSTER" && t >= 1) {
+            if ((this.role === "SHOOTER_A" || this.role === "SHOOTER_B") && data.type === "MONSTER" && t >= 1.05) {
               if (!this.clearedMonsters.has(id)) {
                 this.clearedMonsters.add(id);
-                setTimeout(() => this.removeEntityImmediate(id), 500);
+                setTimeout(() => this.removeEntityImmediate(id), 350);
               }
             }
     }
