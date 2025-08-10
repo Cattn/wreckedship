@@ -505,11 +505,9 @@ class GameClient {
       port === "4032" || hostname === "localhost" || hostname === "127.0.0.1"
         ? devApiHost
         : window.location.host;
-    const socketUrl = (window.SOCKET_URL || `${protocol}//${resolvedHost}`);
     const makeUrl = (role) => {
       const u = new URL("controller.html", window.location.href);
       u.searchParams.set("role", role);
-      u.searchParams.set("socket", socketUrl);
       return u.toString();
     };
     const draw = (id, url) => {
@@ -517,14 +515,19 @@ class GameClient {
       const el = document.getElementById(id);
       if (!el) return;
       el.innerHTML = "";
+      el.style.width = "272px";
+      el.style.height = "272px";
+      el.style.padding = "8px";
+      el.style.background = "#ffffff";
+      el.style.boxSizing = "border-box";
       new window.QRCode(id, url);
       const child = el.querySelector("canvas, img");
       if (child) {
-        child.style.width = "100%";
-        child.style.height = "100%";
-        child.style.maxWidth = "100%";
-        child.style.maxHeight = "100%";
-        child.style.objectFit = "contain";
+        child.style.width = "256px";
+        child.style.height = "256px";
+        child.style.display = "block";
+        child.style.margin = "0 auto";
+        child.style.imageRendering = "pixelated";
       }
     };
     const urlA = makeUrl("SHOOTER_A");
