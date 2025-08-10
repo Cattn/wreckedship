@@ -514,7 +514,7 @@ class GameClient {
     };
     const draw = (canvas, text) => {
       if (!canvas || !window.QRCode) return;
-      window.QRCode.toCanvas(canvas, text, { width: 120, margin: 0 }, () => {});
+      window.QRCode.toCanvas(canvas, text, { width: 290, margin: 0 }, () => {});
     };
     draw(a, makeUrl("SHOOTER_A"));
     draw(b, makeUrl("SHOOTER_B"));
