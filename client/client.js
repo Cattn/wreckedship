@@ -518,10 +518,24 @@ class GameClient {
       if (!el) return;
       el.innerHTML = "";
       new window.QRCode(id, url);
+      const child = el.querySelector("canvas, img");
+      if (child) {
+        child.style.width = "100%";
+        child.style.height = "100%";
+        child.style.maxWidth = "100%";
+        child.style.maxHeight = "100%";
+        child.style.objectFit = "contain";
+      }
     };
-    draw("qr-shooter-a", makeUrl("SHOOTER_A"));
-    draw("qr-shooter-b", makeUrl("SHOOTER_B"));
-    draw("qr-enemy", makeUrl("ENEMY"));
+    const urlA = makeUrl("SHOOTER_A");
+    const urlB = makeUrl("SHOOTER_B");
+    const urlE = makeUrl("ENEMY");
+    console.log("QR URL (SHOOTER_A):", urlA);
+    console.log("QR URL (SHOOTER_B):", urlB);
+    console.log("QR URL (ENEMY):", urlE);
+    draw("qr-shooter-a", urlA);
+    draw("qr-shooter-b", urlB);
+    draw("qr-enemy", urlE);
   }
 
   updateControllerStatuses(players) {
