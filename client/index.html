@@ -1,0 +1,107 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>mov-tracker</title>
+    <style>
+        body {
+            margin: 0;
+            padding: 20px;
+            font-family: Arial, sans-serif;
+            background: #1a1a1a;
+            color: white;
+        }
+        .container {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 20px;
+        }
+        .video-container {
+            position: relative;
+            border: 2px solid #333;
+            border-radius: 8px;
+            overflow: hidden;
+        }
+        #video {
+            display: block;
+            width: 640px;
+            height: 480px;
+        }
+        #canvas {
+            position: absolute;
+            top: 0;
+            left: 0;
+            pointer-events: none;
+        }
+        .status {
+            display: flex;
+            gap: 20px;
+            margin-top: 10px;
+        }
+        .status-item {
+            padding: 10px 20px;
+            border-radius: 5px;
+            background: #333;
+            min-width: 100px;
+            text-align: center;
+        }
+        .movement {
+            font-size: 24px;
+            font-weight: bold;
+            padding: 15px 30px;
+            border-radius: 8px;
+            background: #2a2a2a;
+            border: 2px solid #444;
+            min-width: 150px;
+            text-align: center;
+        }
+        .movement.left { border-color: #ff6b6b; background: #2a1a1a; }
+        .movement.right { border-color: #4ecdc4; background: #1a2a2a; }
+        .movement.still { border-color: #ffe66d; background: #2a2a1a; }
+        .error {
+            color: #ff6b6b;
+            padding: 20px;
+            border: 1px solid #ff6b6b;
+            border-radius: 5px;
+            background: rgba(255, 107, 107, 0.1);
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+
+        <div class="video-container">
+            <video id="video" autoplay muted playsinline></video>
+            <canvas id="canvas" width="640" height="480"></canvas>
+        </div>
+        
+        <div class="status">
+            <div class="status-item">
+                <div>Camera Status</div>
+                <div id="camera-status">Starting...</div>
+            </div>
+            <div class="status-item">
+                <div>Detection</div>
+                <div id="detection-status">Loading...</div>
+            </div>
+            <div class="status-item">
+                <div>FPS</div>
+                <div id="fps">0</div>
+            </div>
+        </div>
+        
+        <div class="movement" id="movement-status">INITIALIZING</div>
+        
+        <div id="error-message" class="error" style="display: none;"></div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/@mediapipe/camera_utils/camera_utils.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@mediapipe/control_utils/control_utils.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@mediapipe/drawing_utils/drawing_utils.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@mediapipe/pose/pose.js"></script>
+    <script src="client.js"></script>
+</body>
+</html>

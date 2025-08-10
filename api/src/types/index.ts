@@ -1,0 +1,1 @@
+export type MovementDirection = 'LEFT' | 'RIGHT' | 'STILL';
