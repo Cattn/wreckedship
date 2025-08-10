@@ -1,7 +1,10 @@
 (function () {
   function getParams() {
     const params = new URLSearchParams(window.location.search);
-    const role = (params.get("role") || "").toUpperCase();
+    const roleParam = (params.get("role") || "").toUpperCase();
+    const role = ["ENEMY", "SHOOTER_A", "SHOOTER_B"].includes(roleParam)
+      ? roleParam
+      : null;
     const socketUrl = params.get("socket");
     return { role, socketUrl };
   }
@@ -20,9 +23,7 @@
   class PhoneController {
     constructor() {
       const { role, socketUrl } = getParams();
-      this.role = ["ENEMY", "SHOOTER_A", "SHOOTER_B"].includes(role)
-        ? role
-        : "SHOOTER_A";
+      this.role = role;
       this.socketUrl = resolveSocketUrl(socketUrl);
       this.socket = null;
       this.currentLane = "CENTER";
@@ -35,6 +36,11 @@
     }
 
     init() {
+      if (!this.role) {
+        document.getElementById("role").textContent = "Role: -";
+        document.getElementById("status").textContent = "Not linked. Scan QR from main screen.";
+        return;
+      }
       document.getElementById("role").textContent = `Role: ${this.role}`;
       this.bindUI();
       this.connect();
@@ -72,6 +78,7 @@
     }
 
     connect() {
+      if (!this.role) return;
       this.socket = io(this.socketUrl, { transports: ["websocket"], upgrade: false });
       this.socket.on("connect", () => {
         document.getElementById("status").textContent = "Connected";

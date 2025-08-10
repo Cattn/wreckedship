@@ -95,16 +95,24 @@ export class GameManager {
       socket.emit("waiting", { message: "waiting on new game" });
       return;
     }
-    const roles: PlayerRole[] = [
-      "CAPTAIN",
-      "SHOOTER_A",
-      "SHOOTER_B",
-      "ENEMY",
-    ];
+    const requested: PlayerRole = role || "CAPTAIN";
     const used = new Set(
       [...this.state.players.values()].map((p) => p.role)
     );
-    const assigned = roles.find((r) => !used.has(r)) || "CAPTAIN";
+    let assigned: PlayerRole | null = null;
+    if (requested === "CAPTAIN") {
+      if (!used.has("CAPTAIN")) assigned = "CAPTAIN";
+    } else if (
+      requested === "SHOOTER_A" ||
+      requested === "SHOOTER_B" ||
+      requested === "ENEMY"
+    ) {
+      if (!used.has(requested)) assigned = requested;
+    }
+    if (!assigned) {
+      socket.emit("waiting", { message: "waiting on new game" });
+      return;
+    }
     const player: PlayerInfo = {
       id: socket.id,
       role: assigned,
