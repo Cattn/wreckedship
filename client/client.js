@@ -346,6 +346,7 @@ class GameClient {
     this.entityElements = new Map();
     this.travelMs = 2200;
     this.rafId = null;
+    this.toastEl = null;
     this.updateRoleHud();
     this.setupCursorSprites();
     this.setupLaneBackgrounds();
@@ -433,6 +434,9 @@ class GameClient {
     });
     this.socket.on("controllers-updated", (readiness) => {
       this.applyControllersReadiness(readiness || {});
+    });
+    this.socket.on("controller-shake", (payload) => {
+      this.showShakeToast(payload);
     });
     this.socket.on("monster-destroyed", () => {});
     this.socket.on("round-started", () => {});
@@ -603,6 +607,45 @@ class GameClient {
       if (laneName === this.currentLane) laneEl.classList.add("active");
       else laneEl.classList.remove("active");
     });
+  }
+
+  ensureToast() {
+    if (this.toastEl) return this.toastEl;
+    const el = document.createElement("div");
+    el.style.position = "fixed";
+    el.style.bottom = "16px";
+    el.style.left = "50%";
+    el.style.transform = "translateX(-50%)";
+    el.style.background = "#111827";
+    el.style.color = "#fff";
+    el.style.padding = "10px 14px";
+    el.style.border = "1px solid #334155";
+    el.style.borderRadius = "10px";
+    el.style.fontSize = "14px";
+    el.style.boxShadow = "0 6px 20px rgba(0,0,0,0.35)";
+    el.style.opacity = "0";
+    el.style.transition = "opacity 120ms ease";
+    document.body.appendChild(el);
+    this.toastEl = el;
+    return el;
+  }
+
+  showShakeToast(payload) {
+    const el = this.ensureToast();
+    const who = payload && payload.fromRole ? payload.fromRole : "Controller";
+    const accepted = payload && payload.accepted ? "accepted" : "queued";
+    if (payload && payload.type === "SHOOT") {
+      el.textContent = `${who} shake: SHOOT (${accepted})`;
+    } else if (payload && payload.type === "TIDE") {
+      el.textContent = `${who} shake: TIDE ${payload.direction || ""} (${accepted})`;
+    } else {
+      el.textContent = `${who} shake`;
+    }
+    el.style.opacity = "1";
+    clearTimeout(this._toastTimer);
+    this._toastTimer = setTimeout(() => {
+      el.style.opacity = "0";
+    }, 1100);
   }
 
     createEntityElement(kind) {

@@ -170,12 +170,18 @@ export class GameManager {
   }
 
   private handleShoot(senderSocketId: string, lane: Lane) {
-    if (!this.state.roundActive) return;
     let role: PlayerRole | null = null;
     const player = this.state.players.get(senderSocketId);
     if (player) role = player.role;
     else role = this.state.controllerRoleBySocket.get(senderSocketId) || null;
-    if (role !== "SHOOTER_A" && role !== "SHOOTER_B") return;
+    const accepted = !!this.state.roundActive && (role === "SHOOTER_A" || role === "SHOOTER_B");
+    this.io.emit("controller-shake", {
+      type: "SHOOT",
+      fromRole: role,
+      lane,
+      accepted,
+    });
+    if (!accepted) return;
 
     const offset = this.getTideOffset();
     const hit = [...this.state.monsters.values()].find(
@@ -273,14 +279,19 @@ export class GameManager {
   }
 
   private activateTide(senderSocketId: string, direction: "LEFT" | "RIGHT") {
-    if (!this.state.roundActive) return;
     let role: PlayerRole | null = null;
     const p = this.state.players.get(senderSocketId);
     if (p) role = p.role;
     else role = this.state.controllerRoleBySocket.get(senderSocketId) || null;
-    if (role !== "ENEMY") return;
     const now = Date.now();
-    if (now < this.state.tideCooldownUntil) return;
+    const canApply = this.state.roundActive && role === "ENEMY" && now >= this.state.tideCooldownUntil;
+    this.io.emit("controller-shake", {
+      type: "TIDE",
+      fromRole: role,
+      direction,
+      accepted: canApply,
+    });
+    if (!canApply) return;
     const offset = direction === "LEFT" ? -1 : 1;
     this.state.tideOffset = offset;
     this.state.tideActiveUntil = now + this.state.tideDurationMs;
