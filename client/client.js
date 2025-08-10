@@ -384,6 +384,10 @@ class GameClient {
       document.getElementById("card-shooter-b"),
       document.getElementById("card-enemy"),
     ];
+    if (this.role === "CAPTAIN") {
+      for (const c of cards) if (c) c.style.display = "none";
+      return;
+    }
     for (const c of cards) if (c) c.style.display = "none";
     if (showId) {
       const el = document.getElementById(showId);
@@ -515,6 +519,7 @@ class GameClient {
   }
 
   updateControllerStatuses(players) {
+    if (this.role === "CAPTAIN") return;
     const byRole = new Map();
     for (const p of players) byRole.set(p.role, p);
     const apply = (roleKey, qrId, statusId) => {
