@@ -220,6 +220,12 @@ class AdminPanel {
       stats.currentMonsters || 0;
     document.getElementById("current-obstacles").textContent =
       stats.currentObstacles || 0;
+    const playersReadyEl = document.getElementById("players-ready");
+    const controllersReadyEl = document.getElementById("controllers-ready");
+    const allReadyEl = document.getElementById("all-ready");
+    if (playersReadyEl) playersReadyEl.textContent = stats.playersReady ? "Yes" : "No";
+    if (controllersReadyEl) controllersReadyEl.textContent = stats.controllersReady ? "Yes" : "No";
+    if (allReadyEl) allReadyEl.textContent = stats.allReady ? "Yes" : "No";
     const statusText = document.getElementById("round-status-text");
     statusText.textContent = stats.roundActive
       ? "Active"
@@ -231,8 +237,8 @@ class AdminPanel {
       startGameBtn.disabled = true;
       startGameBtn.textContent = "Round in Progress";
     } else {
-      startGameBtn.disabled = false;
-      startGameBtn.textContent = "Start Round";
+      startGameBtn.disabled = !stats.allReady;
+      startGameBtn.textContent = stats.allReady ? "Start Round (Everyone Ready)" : "Start Round";
     }
   }
 

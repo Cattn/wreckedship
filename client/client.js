@@ -351,6 +351,8 @@ class GameClient {
     this.travelMs = 2200;
     this.rafId = null;
     this.toastEl = null;
+    this.cooldownEl = null;
+    this.tideCooldownUntil = 0;
     this.lives = 3;
     this.livesEl = null;
     this.clearedObstacles = new Set();
@@ -485,6 +487,10 @@ class GameClient {
       this._toastTimer = setTimeout(() => {
         el.style.opacity = "0";
       }, 1600);
+    });
+    this.socket.on("tide-state", (payload) => {
+      if (!payload) return;
+      this.tideCooldownUntil = typeof payload.cooldownUntil === "number" ? payload.cooldownUntil : 0;
     });
   }
 
@@ -700,6 +706,27 @@ class GameClient {
     return el;
   }
 
+  ensureCooldownEl() {
+    if (this.cooldownEl) return this.cooldownEl;
+    const el = document.createElement("div");
+    el.style.position = "fixed";
+    el.style.top = "12px";
+    el.style.left = "12px";
+    el.style.padding = "6px 8px";
+    el.style.background = "rgba(17,24,39,0.55)";
+    el.style.border = "1px solid #334155";
+    el.style.borderRadius = "10px";
+    el.style.fontSize = "16px";
+    el.style.lineHeight = "1";
+    el.style.letterSpacing = "1px";
+    el.style.userSelect = "none";
+    el.style.backdropFilter = "blur(6px)";
+    el.style.opacity = "0.9";
+    document.body.appendChild(el);
+    this.cooldownEl = el;
+    return el;
+  }
+
   ensureLivesEl() {
     if (this.livesEl) return this.livesEl;
     const existing = document.getElementById("lives");
@@ -832,9 +859,20 @@ class GameClient {
   startAnimationLoop() {
     const step = () => {
       this.updateEntityPositions();
+      this.updateEnemyCooldownDisplay();
       this.rafId = requestAnimationFrame(step);
     };
     this.rafId = requestAnimationFrame(step);
+  }
+
+  updateEnemyCooldownDisplay() {
+    if (this.role !== "ENEMY") return;
+    const el = this.ensureCooldownEl();
+    const now = Date.now();
+    const ms = Math.max(0, (this.tideCooldownUntil || 0) - now);
+    const sec = Math.ceil(ms / 1000);
+    el.textContent = sec > 0 ? `Cooldown: ${sec}s` : "";
+    el.style.display = sec > 0 ? "block" : "none";
   }
 
     updateEntityPositions() {

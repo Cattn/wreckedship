@@ -25,4 +25,7 @@ export interface GameStats {
   roundActive: boolean;
   currentMonsters: number;
   currentObstacles: number;
+  playersReady: boolean;
+  controllersReady: boolean;
+  allReady: boolean;
 }

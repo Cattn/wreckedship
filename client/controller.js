@@ -34,6 +34,8 @@
       this.feedbackTimer = null;
       this.lives = 3;
       this.livesEl = null;
+      this.players = [];
+      this.controllersReady = { SHOOTER_A: false, SHOOTER_B: false, ENEMY: false };
       this.init();
     }
 
@@ -59,6 +61,7 @@
       if (startBtn && isOwner) {
         startBtn.addEventListener("click", () => this.emitStartRound());
       }
+      this.updateOwnerStartButton();
     }
 
     connect() {
@@ -70,6 +73,14 @@
       });
       this.socket.on("disconnect", () => {
         document.getElementById("status").textContent = "Disconnected";
+      });
+      this.socket.on("players-updated", (players) => {
+        this.players = Array.isArray(players) ? players : [];
+        this.updateOwnerStartButton();
+      });
+      this.socket.on("controllers-updated", (readiness) => {
+        this.controllersReady = readiness || {};
+        this.updateOwnerStartButton();
       });
       this.socket.on("controller-shake", (payload) => {
         this.showFeedback("Shake: good!");
@@ -132,6 +143,22 @@
       if (!this.socket || !this.socket.connected) return;
       if (this.role !== "SHOOTER_A") return;
       this.socket.emit("start-round");
+    }
+
+    updateOwnerStartButton() {
+      const startBtn = document.getElementById("start-round");
+      const ownerControls = document.getElementById("owner-controls");
+      const isOwner = this.role === "SHOOTER_A";
+      if (!startBtn || !ownerControls) return;
+      ownerControls.style.display = isOwner ? "grid" : "none";
+      if (!isOwner) return;
+      const roles = new Set((this.players || []).map((p) => p && p.role));
+      const playersReady = roles.has("CAPTAIN") && roles.has("SHOOTER_A") && roles.has("SHOOTER_B") && roles.has("ENEMY");
+      const cr = this.controllersReady || {};
+      const controllersReady = !!cr.SHOOTER_A && !!cr.SHOOTER_B && !!cr.ENEMY;
+      const allReady = playersReady && controllersReady;
+      startBtn.disabled = !allReady;
+      startBtn.textContent = allReady ? "Start Round (Everyone Ready)" : "Start Round";
     }
 
     deriveLane() {

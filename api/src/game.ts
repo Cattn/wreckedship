@@ -113,6 +113,12 @@ export class GameManager {
       });
 
       socket.emit("lives-updated", { lives: this.state.lives || 0 });
+      const now = Date.now();
+      socket.emit("tide-state", {
+        offset: this.getTideOffset(),
+        activeUntil: this.state.tideActiveUntil > now ? this.state.tideActiveUntil : 0,
+        cooldownUntil: this.state.tideCooldownUntil > now ? this.state.tideCooldownUntil : 0,
+      });
     });
   }
 
@@ -380,12 +386,13 @@ export class GameManager {
     this.io.emit("tide-state", {
       offset,
       activeUntil: this.state.tideActiveUntil,
+      cooldownUntil: this.state.tideCooldownUntil,
     });
     const t = setTimeout(() => {
       if (this.state.tideActiveUntil <= Date.now()) {
         this.state.tideOffset = 0;
         this.state.tideActiveUntil = 0;
-        this.io.emit("tide-state", { offset: 0, activeUntil: 0 });
+        this.io.emit("tide-state", { offset: 0, activeUntil: 0, cooldownUntil: this.state.tideCooldownUntil });
       }
     }, this.state.tideDurationMs + 10);
     this.state.timers.add(t);
@@ -444,6 +451,14 @@ export class GameManager {
       (p) => p.state !== "ELIMINATED"
     ).length;
     const eliminatedPlayers = totalPlayers - activePlayers;
+    const rolesRequired: PlayerRole[] = ["CAPTAIN", "SHOOTER_A", "SHOOTER_B", "ENEMY"];
+    const playersReady = rolesRequired.every((r) =>
+      [...this.state.players.values()].some((p) => p.role === r)
+    );
+    const controllersReady = ["SHOOTER_A", "SHOOTER_B", "ENEMY"].every((r) =>
+      this.state.controllersByRole.has(r as PlayerRole)
+    );
+    const allReady = playersReady && controllersReady;
     return {
       totalPlayers,
       activePlayers,
@@ -452,6 +467,9 @@ export class GameManager {
       roundActive: this.state.roundActive,
       currentMonsters: this.state.monsters.size,
       currentObstacles: this.state.obstacles.size,
+      playersReady,
+      controllersReady,
+      allReady,
     };
   }
 
