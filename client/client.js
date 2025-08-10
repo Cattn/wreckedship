@@ -3,6 +3,8 @@ class PersonTracker {
     this.video = null;
     this.canvas = null;
     this.ctx = null;
+    this.overlayCanvas = null;
+    this.overlayCtx = null;
     this.pose = null;
     this.camera = null;
 
@@ -50,6 +52,10 @@ class PersonTracker {
     this.video = document.getElementById("video");
     this.canvas = document.getElementById("canvas");
     this.ctx = this.canvas.getContext("2d");
+    this.overlayCanvas = document.getElementById("pose-overlay-ui");
+    if (this.overlayCanvas) this.overlayCtx = this.overlayCanvas.getContext("2d");
+    this.resizeOverlayCanvas();
+    window.addEventListener("resize", () => this.resizeOverlayCanvas());
 
     if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
       throw new Error("Camera access not supported");
@@ -124,10 +130,13 @@ class PersonTracker {
     if (results.poseLandmarks && results.poseLandmarks.length > 0) {
       this.processPoseDetection(results.poseLandmarks);
       this.drawPoseOverlay(results.poseLandmarks);
+      this.drawUiOverlay(results.poseLandmarks);
       this.updateStatus("detection-status", "Person detected");
     } else {
       this.updateStatus("detection-status", "No person detected");
       this.resetMovementTracking();
+      if (this.overlayCtx && this.overlayCanvas)
+        this.overlayCtx.clearRect(0, 0, this.overlayCanvas.width, this.overlayCanvas.height);
     }
   }
 
@@ -250,6 +259,55 @@ class PersonTracker {
         boundingBoxHeight
       );
     }
+  }
+
+  resizeOverlayCanvas() {
+    if (!this.overlayCanvas || !this.overlayCtx) return;
+    const dpr = window.devicePixelRatio || 1;
+    const w = Math.max(document.documentElement.clientWidth, window.innerWidth || 0);
+    const h = Math.max(document.documentElement.clientHeight, window.innerHeight || 0);
+    this.overlayCanvas.style.width = `${w}px`;
+    this.overlayCanvas.style.height = `${h}px`;
+    this.overlayCanvas.width = Math.round(w * dpr);
+    this.overlayCanvas.height = Math.round(h * dpr);
+    this.overlayCtx.setTransform(dpr, 0, 0, dpr, 0, 0);
+  }
+
+  drawUiOverlay(landmarks) {
+    if (!this.overlayCtx || !this.overlayCanvas) return;
+    const ctx = this.overlayCtx;
+    const w = this.overlayCanvas.clientWidth || window.innerWidth;
+    const h = this.overlayCanvas.clientHeight || window.innerHeight;
+    ctx.clearRect(0, 0, w, h);
+    const leftShoulder = landmarks[11];
+    const rightShoulder = landmarks[12];
+    if (!(leftShoulder && rightShoulder)) return;
+    if (!(leftShoulder.visibility > 0.6 && rightShoulder.visibility > 0.6)) return;
+    const centerX = (leftShoulder.x + rightShoulder.x) / 2;
+    const centerY = (leftShoulder.y + rightShoulder.y) / 2;
+    if (this.baselineX !== null) {
+      ctx.save();
+      ctx.strokeStyle = "rgba(255, 230, 109, 0.45)";
+      ctx.lineWidth = 2;
+      ctx.setLineDash([6, 6]);
+      ctx.beginPath();
+      const bx = this.baselineX * w;
+      ctx.moveTo(bx, 0);
+      ctx.lineTo(bx, h);
+      ctx.stroke();
+      ctx.restore();
+    }
+    ctx.save();
+    ctx.fillStyle = "rgba(78, 205, 196, 0.55)";
+    ctx.strokeStyle = "rgba(78, 205, 196, 0.8)";
+    ctx.lineWidth = 2;
+    const px = centerX * w;
+    const py = centerY * h;
+    ctx.beginPath();
+    ctx.arc(px, py, 8, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.stroke();
+    ctx.restore();
   }
 
   resetMovementTracking() {

@@ -28,6 +28,7 @@
         height: 100vh;
         display: grid;
         place-items: center;
+        overflow: hidden;
       }
       #game-root {
         width: min(900px, 96vw);
@@ -186,6 +187,15 @@
         left: 0;
         pointer-events: none;
       }
+      #pose-overlay-ui {
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100vw;
+        height: 100vh;
+        pointer-events: none;
+        z-index: 9999;
+      }
     </style>
     <script>
       window.SPRITES = {
@@ -248,6 +258,7 @@
         </div>
       </div>
     </div>
+    <canvas id="pose-overlay-ui"></canvas>
 
     <script src="https://cdn.jsdelivr.net/npm/@mediapipe/camera_utils/camera_utils.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/@mediapipe/control_utils/control_utils.js"></script>
