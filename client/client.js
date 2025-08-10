@@ -512,13 +512,21 @@ class GameClient {
       u.searchParams.set("socket", socketUrl);
       return u.toString();
     };
-    const draw = (canvas, text) => {
-      if (!canvas || !window.QRCode) return;
-      window.QRCode.toCanvas(canvas, text, { width: 290, margin: 0 }, () => {});
+    const render = (container, text) => {
+      if (!container || !window.QRCode) return;
+      container.innerHTML = "";
+      new QRCode(container, {
+        text,
+        width: 120,
+        height: 120,
+        colorDark: "#000000",
+        colorLight: "#ffffff",
+        correctLevel: QRCode.CorrectLevel.H,
+      });
     };
-    draw(a, makeUrl("SHOOTER_A"));
-    draw(b, makeUrl("SHOOTER_B"));
-    draw(e, makeUrl("ENEMY"));
+    render(a, makeUrl("SHOOTER_A"));
+    render(b, makeUrl("SHOOTER_B"));
+    render(e, makeUrl("ENEMY"));
   }
 
   updateControllerStatuses(players) {

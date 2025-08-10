@@ -183,17 +183,17 @@
       <div id="controllers">
         <div class="controller-card" id="card-shooter-a">
           <h4>SHOOTER A</h4>
-          <canvas id="qr-shooter-a" class="qr"></canvas>
+          <div id="qr-shooter-a" class="qr"></div>
           <div id="status-shooter-a" class="controller-status">Scan to connect</div>
         </div>
         <div class="controller-card" id="card-enemy">
           <h4>ENEMY</h4>
-          <canvas id="qr-enemy" class="qr"></canvas>
+          <div id="qr-enemy" class="qr"></div>
           <div id="status-enemy" class="controller-status">Scan to connect</div>
         </div>
         <div class="controller-card" id="card-shooter-b">
           <h4>SHOOTER B</h4>
-          <canvas id="qr-shooter-b" class="qr"></canvas>
+          <div id="qr-shooter-b" class="qr"></div>
           <div id="status-shooter-b" class="controller-status">Scan to connect</div>
         </div>
       </div>
@@ -221,7 +221,7 @@
     <script src="https://cdn.jsdelivr.net/npm/@mediapipe/drawing_utils/drawing_utils.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/@mediapipe/pose/pose.js"></script>
     <script src="/vendor/socket.io.min.js"></script>
-    <script src="/vendor/qrcode.js"></script>
+    <script src="./lib/qrcode.min.js"></script>
     <script src="client.js"></script>
   </body>
 </html>
