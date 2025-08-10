@@ -899,7 +899,9 @@ class GameClient {
     const visibleMonsters =
       this.role === "SHOOTER_A" || this.role === "SHOOTER_B"
         ? (this.entities.monsters || []).filter((e) => ((e.forRole || "ALL") === "ALL" || e.forRole === this.role) && !this.clearedMonsters.has(e.id))
-        : [];
+        : (this.role === "ENEMY"
+          ? (this.entities.monsters || []).filter((e) => !this.clearedMonsters.has(e.id))
+          : []);
     const visibleObstacles =
       this.role === "CAPTAIN"
         ? (this.entities.obstacles || []).filter((e) => !this.clearedObstacles.has(e.id))
@@ -956,7 +958,9 @@ class GameClient {
     const visibleMonsters =
       this.role === "SHOOTER_A" || this.role === "SHOOTER_B"
         ? (this.entities.monsters || []).filter((e) => !this.clearedMonsters.has(e.id))
-        : [];
+        : (this.role === "ENEMY"
+          ? (this.entities.monsters || []).filter((e) => !this.clearedMonsters.has(e.id))
+          : []);
     const visibleObstacles =
       this.role === "CAPTAIN" ? (this.entities.obstacles || []).filter((e) => !this.clearedObstacles.has(e.id)) : [];
     const index = new Map();
@@ -988,7 +992,7 @@ class GameClient {
                 this._pendingObstacleRemoval.set(id, h);
               }
             }
-            if ((this.role === "SHOOTER_A" || this.role === "SHOOTER_B") && data.type === "MONSTER" && y >= (ch + eh * 0.5)) {
+            if ((this.role === "SHOOTER_A" || this.role === "SHOOTER_B" || this.role === "ENEMY") && data.type === "MONSTER" && y >= (ch + eh * 0.5)) {
               if (!this.clearedMonsters.has(id)) {
                 this.clearedMonsters.add(id);
                 setTimeout(() => this.removeEntityImmediate(id), 180);

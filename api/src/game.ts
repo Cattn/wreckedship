@@ -388,11 +388,13 @@ export class GameManager {
       activeUntil: this.state.tideActiveUntil,
       cooldownUntil: this.state.tideCooldownUntil,
     });
+    this.syncEntities();
     const t = setTimeout(() => {
       if (this.state.tideActiveUntil <= Date.now()) {
         this.state.tideOffset = 0;
         this.state.tideActiveUntil = 0;
         this.io.emit("tide-state", { offset: 0, activeUntil: 0, cooldownUntil: this.state.tideCooldownUntil });
+        this.syncEntities();
       }
     }, this.state.tideDurationMs + 10);
     this.state.timers.add(t);
